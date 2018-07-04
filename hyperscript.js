@@ -44,12 +44,16 @@ export default function h() {
         parent.appendChild(document.createTextNode(arg))
       }
     }
-    else if ( type === 'number'
-           || type === 'boolean'
-           || arg instanceof Date
-           || arg instanceof RegExp // TODO: why did they support regex?
+    else if (type === 'number'
+      || type === 'boolean' // TODO: not wanted! React filters false tags
+      || arg instanceof Date
+      || arg instanceof RegExp // TODO: why did they support regex?
     ) {
-      parent.appendChild(document.createTextNode(arg.toString()))
+      parent.appendChild(
+        document.createTextNode(
+          arg.toString() // this is unnecessary. toString is called by default
+        )
+      )
     }
     else if (Array.isArray(arg)) {
       // pushing seems to be faster than concat

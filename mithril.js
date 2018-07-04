@@ -40,12 +40,13 @@ export function h(selector) {
     if (!Array.isArray(children)) {
       children = [children]
     }
-  // otherwise add all children. note this means we do not support multiple
-  // arrays of children, only one or none
+    // otherwise add all children (and nested arrays will become fragments)
   } else {
     // MDN says to not use `.slice()` wth arguments due to optimization issues
     children = []
     while (start < arguments.length) {
+      // TODO: better to normalize the tree here? or later in the real loop?
+      // need to convert arrays of arrays into document fragments
       children.push(arguments[start++])
     }
   }
