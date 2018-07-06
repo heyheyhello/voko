@@ -38,15 +38,115 @@ force the developer to write a wrapper to de-recurse their weird component than
 have the reviver do that job.
 
 OK, so that fixes the JSX compatibility issue. Now the reviver can understand
-JSX (with a little bit of the usual Babel first).
+JSX (with a little bit of the usual Babel first). Note this _still_ isn't
+perfect as it's common in JSX to set styles without units, and have them know
+when to default to _px_.
+
+The tl;dr is that it's hard to know what properties are unitless. There are
+entire repositories keeping track of values like `opacity`.
+
+Mithril has some test cases on CSS:
+
+```js
+m("button-bar",
+  m("button",
+    {style: "width:10px; height:10px; border:1px solid #FFF;"},
+    "Normal CSS"
+  ),
+  m("button",
+    {style: "top:0 ; right: 20"},
+    "Poor CSS"
+  ),
+  m("button",
+    {style: "invalid-prop:1;padding:1px;font:12px/1.1 arial,sans-serif;", icon: true},
+    "Poorer CSS"
+  ),
+  m("button",
+    {style: {margin: 0, padding: "10px", overflow: "visible"}},
+    "Object CSS"
+  )
+)
+```
+
+There's a long thread about the API of hyperscript, which is what I'm dealing
+with now...
+https://github.com/hyperhype/hyperscript/issues/66
+
+Some libraries take a `props` object that defines _both_ `events` and `attrs` to
+allow for regex-less event listener names. Others allow namespacing for XML!
+Another uses `hooks` like `beforeRevomal` to aid in transitions...wew.
+
+The Mithril author chimed in at the end of issue #66 and lays down some great
+points: JSX compatibility should be prioritized - some people will never want to
+write in hyperscript directly and that's just the way it is. Next, try to
+support the existing HTML and JS APIs. He also mentions variations in those:
+
+> There are variations in how attributes are handled, with some implementations
+> allowing `class`, `readonly`, `contenteditable` instead of `className` /
+> `readOnly` / `contentEditable` and some not. There are also spec deviations
+> (e.g. React's `onClick` vs Mithril/HTML/JS's `onclick`). In Mithril, the
+> recommendation is to stay close to HTML spec, but it also supports the JS API
+> (i.e. both readonly and readOnly)
+
+Other troubled properties:
+  - class: className
+  - for: htmlFor
+  - http-equiv: httpEquiv
+
+Note that properties are different than attributes for the DOM. An SO comment at
+https://stackoverflow.com/questions/15750290/ mentions:
+
+> DOM conceptually works with objects and properties. htmlFor is the correct way
+> by setting the DOM element's property. No need to mess with attributes which
+> is what setAttribute does.
+
+Which is explained here:
+https://stackoverflow.com/questions/6003819/what-is-the-difference-between-properties-and-attributes-in-html
+
+---
+
+I'd like to be Mithril compatible, which is therefore also JSX compatible. Then
+I'll also write a small version for projects that are only for _you_ and don't
+need compatibility with anything.
+
+Compatibility also extends to web-components. Some libraries spend a great
+amount of code ensuring they're properly supported. The `is` attribute must be
+taken out (like events are) from other attributes and
+
+```js
+document.createElement('div', { is: 'my-list-item' })
+```
+
+---
 
 Why accept a DOM node? Do I see myself writing `v(v(v('div')))`? No, but it does
 mean you can add attributes and children to an existing DOM node, which is neat.
+This would be done through `v($('.findMe'), { onClick: () => {} })`
+
+**However** should the reviver not mutate things? Accepting an attached DOM node
+is kinda...hmm. As someone in a _hyperscript_ issue thread wrote:
+
+> When using, designing and documenting APIs for things [...] it’s good when one
+> function returns a value or mutates things. But not both at the same time.
+
+Also, imagine a DOM node already has an attribute `disabled: true`, and you pass
+it to the reviver with `v(DOMNode, { disabled: false })`. Does it diff, and then
+call `removeAttribute('disabled')`? Not currently, but some implementations do
+and maybe for good reason?
+
+---
+
+Update on arrays as children; don't advise the use of an array. It's only meant
+for cases like:
+
+```js
+
+```
 
 ## Proposed syntax
 
 ```js
-v('#main', [
+v('#main',
   v('a[href=/][class=link].large', 'Home'),
 
   // allow a called component (a function) to receive props and attributes
@@ -77,5 +177,5 @@ v('#main', [
   ),
   // document fragment containing a text node and a DOM node
   [ 'Text', DOMNode ],
-])
+)
 ```
