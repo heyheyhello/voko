@@ -1,8 +1,18 @@
-// modification to hyperscript reviver used in Mithril.js
-// simplified to help understanding
+// voko hyperscript reviver. adapted from Mithril and Preact
+// this version targets full compatibility with JSX
 
+// matches CSS selectors into a tag, id/classes (via #/.), and attributes
 const selectorRegex = /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*('|'|)((?:\\[''\]]|.)*?)\5)?\])/g
 const selectorCache = {}
+
+// numeric CSS properties which shouldn't have 'px' automatically suffixed
+// lifted from preact: https://github.com/developit/preact/commit/73947d6abc17967275d9ea690d78e5cf3ef11e37
+const styleNoUnit = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i
+
+// Mithril supports several features that I purposely drop support for:
+//   - web-components. no `is:` attribute in document.createElement
+//   - SVGs and any other namespace such as MathML
+//   - updating attibutes. this only ever generates the DOM once
 
 // parse a selector into a tag (defaults to div) and a series of attributes
 function parseSelector(selector) {
@@ -70,7 +80,13 @@ export function h(selector) {
   // it's safe to delete attributes that don't exist
   delete attrs.class
   delete attrs.className
-  Object.assign(state.attrs, attrs)
 
-  // TODO: build the DOM, set event listeners, and assign everything else over
+  // TODO: handle event listeners, which need to be done seperately. styles,
+  // which needs to support both a string and an object.
+
+  // TODO: if the attribute is one of "href", "list", "form", "width", or
+  // "height" (also "type" if supporting IE 11) then it must be added with the
+  // setAttribute() DOM API and not to the DOM object in Object.assign()
+
+  Object.assign(state.attrs, attrs)
 }
