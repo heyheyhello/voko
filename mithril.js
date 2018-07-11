@@ -3,7 +3,11 @@
 
 // matches CSS selectors into a tag, id/classes (via #/.), and attributes
 const selectorRegex = /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*('|'|)((?:\\[''\]]|.)*?)\5)?\])/g
+// vs new Map()?
 const selectorCache = {}
+
+// unsure if this will ever be used
+const eventStore = new WeakMap()
 
 // numeric CSS properties which shouldn't have 'px' automatically suffixed
 // lifted from preact: https://github.com/developit/preact/commit/73947d6abc17967275d9ea690d78e5cf3ef11e37
@@ -93,14 +97,54 @@ export function h(selector) {
   // the class is set, so delete them to avoid overwriting in Object.assign()
   // it's safe to delete attributes that don't exist
   delete attrs.class
-  delete attrs.className
 
-  // TODO: handle event listeners, which need to be done seperately. styles,
-  // which needs to support both a string and an object.
+  // this is only for JSX compatibility
+  // TODO: use hasOwnProperty in the final version
+  // TODO: filter children by boolean to support `expression && v(...`
+  if ('children' in attrs) {
+    const value = attrs.children
+    // this is interesting - it's like functions as children. do you let them
+    // recurse on forever? or force developers to flatten arrays or arrays?
+    // using a spread here isn't saving children from furthur nested arrays
+    if (Array.isArray(value)) {
+      children.push(...attrs.children)
+    } else {
+      children.push(attrs.children)
+    }
+    delete attrs.children // ? vs handle them in the loop
+  }
 
-  // TODO: if the attribute is one of "href", "list", "form", "width", or
-  // "height" (also "type" if supporting IE 11) then it must be added with the
-  // setAttribute() DOM API and not to the DOM object in Object.assign()
+  if ('key' in attrs) {
+    console.log('voko: ignoring virtual DOM key attribute')
+    delete attrs.key
+  }
+
+  for (const [name, value] in Object.entries(attrs)) {
+    if (name === 'style') {
+      if (!value || typeof value === 'string') {
+        node.style.cssText = value || ''
+      }
+      else if (value && typeof value === 'object') {
+        for (const property in value) {
+          node.style[property] =
+            typeof value[property] === 'number' && !styleNoUnit.test(property)
+            ? value[property] + 'px'
+            : value[property]
+        }
+      }
+    }
+    else if (name[0] == 'o' && name[1] == 'n') {
+      const event = name.toLowerCase().substring(2)
+      // TODO: eventStore.set(node, { [event]: value })
+      node.addEventListener(event, value)
+    }
+    else if (name in node) { // && !isAttribute i.e href/list/form/width/height?
+      node[name] = value
+    }
+    else {
+      node.setAttribute(name, typeof value === 'boolean' ? '' : value)
+    }
+  }
 
   Object.assign(state.attrs, attrs)
 }
