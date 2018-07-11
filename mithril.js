@@ -9,10 +9,24 @@ const selectorCache = {}
 // lifted from preact: https://github.com/developit/preact/commit/73947d6abc17967275d9ea690d78e5cf3ef11e37
 const styleNoUnit = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i
 
-// Mithril supports several features that I purposely drop support for:
-//   - web-components. no `is:` attribute in document.createElement
-//   - SVGs and any other namespace such as MathML
-//   - updating attibutes. this only ever generates the DOM once
+/**
+ * Mithril and Preact support some features and cases that I don't want to:
+ *
+ * - web-components; pass `is:` attributes into document.createElement
+ * - other namespaces; such as SVGs and MathML
+ * - updating and removing attibutes if dealing with an existing DOM node
+ * - detection of possible parent elements; such as auto creating a table if
+ *   using a td inside a div (else the browser removes the td node entirely)
+ * - an edge case of input[type=...] on IE 11 needing setAttribute
+ * - the spellcheck attribute needs to be handled care for updates and removal
+ * - late attributes for select elements; value and selectedIndex can only be
+ *   meaningfully set once the node is live
+ *
+ * I've also decided to not support mutating DOM nodes, which means it's not
+ * possible to call a component and have its result passed into the reviver. The
+ * only function that can be passed called is to return a selector. Note this is
+ * the opposite of what is currently written in the documentation
+ */
 
 // parse a selector into a tag (defaults to div) and a series of attributes
 function parseSelector(selector) {
