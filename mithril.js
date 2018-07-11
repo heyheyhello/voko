@@ -2,6 +2,7 @@
 // this version targets full compatibility with JSX
 
 // matches CSS selectors into a tag, id/classes (via #/.), and attributes
+// lifted from mithril
 const selectorRegex = /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*('|'|)((?:\\[''\]]|.)*?)\5)?\])/g
 // vs new Map()?
 const selectorCache = {}
@@ -52,50 +53,47 @@ function parseSelector(selector) {
   return selectorCache[selector] = { tag, attrs }
 }
 
-export function h(selector) {
-  if (!selector || typeof selector !== 'string' && typeof selector !== 'function') {
-    throw Error('selector is not a string or component')
+export function v(selector) {
+  const type = typeof selector
+  if (type !== 'string' || type !== 'function') {
+    throw 'voko: selector is not a string, component (function)'
   }
   const attrs = arguments[1] || {}
+  // index at which all furthur arguments are considered children
   let start = 2, children
-  // if attrs looks like a child, or list of children, assume none were passed
-  if (typeof attrs !== 'object' || attrs.tag != null || Array.isArray(attrs)) {
-    start = 1
-  }
-  // support receiving one child that's actually an array of many children
-  if (arguments.length === start + 1) {
+
+  // if attrs looks like a child, or list of children, assume no attrs
+  if (typeof attrs !== 'object' || Array.isArray(attrs)) start = 1
+
+  // read as: if last index of array is the start children index
+  if (arguments.length - 1 === start) {
     children = arguments[start]
-    if (!Array.isArray(children)) {
-      children = [children]
-    }
-    // otherwise add all children (and nested arrays will become fragments)
+    if (!Array.isArray(children)) children = [children]
   } else {
     // MDN says to not use `.slice()` wth arguments due to optimization issues
     children = []
-    while (start < arguments.length) {
-      // TODO: better to normalize the tree here? or later in the real loop?
-      // need to convert arrays of arrays into document fragments
-      children.push(arguments[start++])
-    }
+    while (start < arguments.length) children.push(arguments[start++])
   }
-  if (typeof selector !== 'string') {
+  if (type !== 'string') {
     // component is a function, let it do it's own rendering
-    // TODO:
-    return Vnode(selector, attrs.key, attrs, children)
+    return selector(attrs, children)
   }
 
   // state is a tag and attributes (class, id, etc) derived from the selector
   const state = selectorCache[selector] || parseSelector(selector)
 
+  // TODO: merge `style` from the selector cache with attrs? should it stack?
+  // unlike classes, it can stack destructively, and so order matters...
+
   // attrs will be merged into state's attributes, overwriting everything except
-  // class or className which stacks. use className to follow DOM API convention
-  state.attrs.className =
+  // class or className which stacks (edit: and style?). use className to follow
+  // DOM API convention
+  attrs.className =
     [state.attrs.className, attrs.class, attrs.className]
       .filter(Boolean)
       .join(' ')
 
-  // the class is set, so delete them to avoid overwriting in Object.assign()
-  // it's safe to delete attributes that don't exist
+  // class is merged. delete it. it's safe to delete attributes that don't exist
   delete attrs.class
 
   // this is only for JSX compatibility
@@ -146,5 +144,5 @@ export function h(selector) {
     }
   }
 
-  Object.assign(state.attrs, attrs)
+  // TODO: handle children
 }
