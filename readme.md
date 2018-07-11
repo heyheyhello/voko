@@ -1,5 +1,14 @@
 # Hyperscript revivers
 
+_Work in progress. Mostly research_
+
+Utility providing a shorthand way of producing HTML DOM trees. The parser is JSX
+compatible, but far more powerful without it by allow CSS selector syntax to
+define element tags. Useful for times when a full framework is too heavy, but
+using DOM APIs like `createElement` is too tedious.
+
+---
+
 This is research into building a static hyperscript reviver inspired by the
 original hyperscript project, JSX, vhtml, preact/h, and mithril/hyperscript.
 
@@ -288,3 +297,30 @@ Mithril without a virtual DOM, and with a goal of components like vhtml.
 
 I need to make one, it seems. I've started writing in _implementation.md_ to
 decide what syntax it will support.
+
+_Update:_ Don't accept a DOM Node as a selector. Don't modify existing nodes,
+only support creating new nodes. Don't create document fragments - there's no
+reason to for now. Support nested arrays and DOM nodes as children, however.
+Don't encourage using "top-level" arrays. They're only really supported for
+children like `.map()` which will return an array.
+
+Proposed example (haven't decided on a style):
+
+```js
+h('#main',
+  h('a.large[href=/]', 'Home'),
+  h(MyComponent,
+    { size: 50, class: 'center' }
+  ),
+  h('section.primary',
+    'Text',
+    h('p', 'Button'),
+    h('small',
+      { style: { ... }, className: 'blue', onClick() { ... } },
+      'Tap me'
+    )
+  ),
+  document.createElement('div')
+  anArray.map(item => h('li.item', item)),
+])
+```
