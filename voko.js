@@ -44,7 +44,7 @@ function parseSelector(selector) {
     else if (type === '.') classes.push(value)
     else if (match[3][0] === '[') {
       let attrValue = match[6]
-      if (attrValue) attrValue = attrValue.replace(/\\([''])/g, '$1').replace(/\\\\/g, '\\')
+      if (attrValue) attrValue = attrValue.replace(/\\(["'])/g, "$1").replace(/\\\\/g, "\\")
       if (match[4] === 'class') classes.push(attrValue)
       else attrs[match[4]] = attrValue === '' ? attrValue : attrValue || true
     }
