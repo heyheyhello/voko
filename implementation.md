@@ -136,17 +136,21 @@ and maybe for good reason?
 
 ---
 
-Update on arrays as children; don't advise the use of an array. It's only meant
-for cases like:
+~~Update on arrays as children; don't advise the use of an array. It's only
+meant for cases like:~~ No, actually. It's meant for indentation! Editors and
+linters will not understand otherwise. Use arrays at the top level! Nested
+arrays are only for cases like:
 
 ```js
-
+m('#ok', { ... }, anArray.map(item => m('li', item)))
 ```
 
 ## Proposed syntax
 
 ```js
-v('#main',
+v('#main', {
+  style: 'font-size: 10px',
+}, [
   v('a[href=/][class=link].large', 'Home'),
 
   // allow a called component (a function) to receive props and attributes
@@ -157,25 +161,22 @@ v('#main',
   // props, attributes, and children. this is for JSX compatibility
   v(AnotherComponent, { props, attributes })
 
-  // allow a DOM node (a component that was called with props), and then modify
-  // the node with attributes and children. it's too late for any props
-  v(MyComponent({ size: 25 }), { attributes }, 'Appended text!')
-  v(document.createElement('p'), { attributes }, 'This is OK too if you need')
+  // the only type of function as a selector is one that returns a selector
+  v(FunctionThatReturnsSelector(), {})
 
-  // while allowed, avoid using a function to return a selector since it looks
-  // like a component and will confuse people who read your code
-  v(ConfusingFunctionThatReturnsSelector(), {})
-
-  v('.btn.primary[disabled]',
+  v('.btn.primary[disabled]', [
     // not an array of children
     v('p', 'Button'),
     'Text',
     v('small', {
-      style: { ... },
+      // it knows what values can have px appended
+      // also note that style object properties are natively camelCase
+      style: { fontSize: 8, opacity: 0.5 },
       onclick: () => ...
     }, 'Tap me')
-  ),
-  // document fragment containing a text node and a DOM node
+  ]),
+
+  // needlessly nested but OK. no document fragment will be used
   [ 'Text', DOMNode ],
-)
+])
 ```
