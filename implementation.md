@@ -3,15 +3,48 @@ guess... unlike React/Mithril/etc where you expect the framework to convert your
 tree to a virtual DOM and handle mounting it for you, this will need to return
 an actual DOM node. Always. This is nice because to get a reference to a DOM
 node in a virtual DOM library you need `{ ref={node => this.node = node} }` as
-an attribute, but here all you do is `const header = h(...)`
+an attribute, but here all you do is `const header = v(...)`
 
-I believe the reviver will only ever receive two types of children. DOM nodes to
-be appended to the parent, and everything else that's wrapped in a text node and
-then treated as DOM nodes. Components are static and take care of themselves
-updating however they choose to. So they'll return a DOM node after being given
-props. The issue with that is `v(MyComponent, {})` or anything that's not
-`v('selector as string')` doesn't make sense. It's like saying "create a DOM
-node with this DOM node". Is that OK?
+Possible children:
+  - __DOM nodes__. Append to the parent.
+  - __Arrays__. For each, rerun this possible children algorithm. Yes this has
+    the possibility of running away and blowing the call stack, just like
+    invoking a component. Doesn't matter.
+  - __Objects (including functions)__. Likely an error. Maybe they tried to
+    apply attributes in the wrong place? Maybe they forgot to wrap their
+    component in `v(...)`. Throw.
+  - __Everything else__. Wrapped in a text node and append. This works for
+    dates, regex, numbers, and anything that has a `.toString()`
+
+Since this is the DOM, components are static and take care of updating
+themselves however they choose to. They'll return a DOM node after being given
+props.
+
+There's one hiccup with that, which is trying to create a DOM node using a DOM
+node. This would be mutating an existing node and isn't something the reviver
+should be responsible for - doing so would mean understanding how to remove and
+merge attributes, events, and children. Let's not. This is the same as JSX, but
+easier to do by accident in hyperscript due to the syntax:
+
+```js
+// voko:
+const header = v('header.ok', { ... } ...) // DOM node. not a component
+return v('main', [
+  v(header, { ... }), // wouldn't make sense, though it looks like a component
+  v('p', 'Hello'),
+])
+
+// JSX:
+const header = <header class='OK'>...</header>
+return (
+  <main>
+    <{header} ... /> // kind of like saying "<<header>>"? bad.
+  </main>
+)
+```
+
+This is probably best avoided by using capitalization for component names as the
+communities already do.
 
 In React/Mithril/etc the framework needs to update components as props change,
 so `h(MyComponent, {})` (`<MyComponent />`) makes sense because the function
@@ -19,31 +52,21 @@ needs to have _not_ been called, so it can be called on each render/lifecycle.
 
 I don't have that.
 
-I could disallow a selector from being anything other than a string, but I break
-JSX compatibility, and it looks...different.
-
 ## Allowed arguments
 
-A safe thing to do is accept either a string, function, or DOM node (like
-`instanceof HTMLElement`, not a fragment or text node) as the first parameter.
-If it's a function, you call it and then assume it has returned a DOM node. This
-means you can't pass a function expecting it to be called and return a selector,
-but for that just do `v(generateSelector(), {})`. Also, it doesn't allow
-recursion on purpose. It's easy to say, oh look, a function, I'll just call it
-and pass it's output back to myself (which is what many implementations do) but
-I imagine being passed the fibonachi sequence and blowing the call stack.
-Granted, components should never need to be called multiple times (why would
-they be nested?), but in the super rare case that it's necessary, I'd rather
-force the developer to write a wrapper to de-recurse their weird component than
-have the reviver do that job.
+Selectors can be either a string or function. Not any type of Node. If it's a
+function, you call it with the attributes and children and return. Other types,
+like DOM nodes, are only valid as children not selectors. Passing off to a
+function recursively is very similar to how arrays are handled - the reviver
+will simply keep calling/looping.
 
 OK, so that fixes the JSX compatibility issue. Now the reviver can understand
-JSX (with a little bit of the usual Babel first). Note this _still_ isn't
-perfect as it's common in JSX to set styles without units, and have them know
-when to default to _px_.
-
-The tl;dr is that it's hard to know what properties are unitless. There are
-entire repositories keeping track of values like `opacity`.
+JSX (with a little bit of the usual Babel first). It's common in JSX to set
+styles without units and have them know when to default to _px_ (properties like
+opacity and flex do not have _px_). This was discussed in an issue thread on
+_hyperscript_, and they decided it was too hard to keep track to which
+properties it applies. However, Preact has a nice regex to check, which I've
+lifted to voko.
 
 Mithril has some test cases on CSS:
 
@@ -58,7 +81,7 @@ m("button-bar",
     "Poor CSS"
   ),
   m("button",
-    {style: "invalid-prop:1;padding:1px;font:12px/1.1 arial,sans-serif;", icon: true},
+    {style: "invalid-prop:1;font:12px/1.1 arial,sans-serif;", icon: true},
     "Poorer CSS"
   ),
   m("button",
@@ -103,6 +126,10 @@ https://stackoverflow.com/questions/15750290/ mentions:
 Which is explained here:
 https://stackoverflow.com/questions/6003819/what-is-the-difference-between-properties-and-attributes-in-html
 
+The Mithril author makes it sound like the reviver/renderer would need a very
+long list of if statements to check all attribute edge cases, but actually it's
+as easy as `attr in node ? node[attr] = ... : node.setAttribute(attr, ...)`.
+
 ---
 
 I'd like to be Mithril compatible, which is therefore also JSX compatible. Then
@@ -119,30 +146,75 @@ document.createElement('div', { is: 'my-list-item' })
 
 ---
 
-Why accept a DOM node? Do I see myself writing `v(v(v('div')))`? No, but it does
-mean you can add attributes and children to an existing DOM node, which is neat.
-This would be done through `v($('.findMe'), { onClick: () => {} })`
-
-**However** should the reviver not mutate things? Accepting an attached DOM node
-is kinda...hmm. As someone in a _hyperscript_ issue thread wrote:
+Considered accepting a DOM node in previous versions. Not that I was expecting
+to write anything like `v(v(v('div')))`, but it meant you can add attributes and
+children to an existing DOM node, which is neat. An example might be:
+`v($('.findMe'), { onClick: () => {} })`. However, I was reminded that a reviver
+does not mutate anything. Accepting an attached DOM node is kinda...hmm; as
+someone in a _hyperscript_ issue thread wrote:
 
 > When using, designing and documenting APIs for things [...] it’s good when one
 > function returns a value or mutates things. But not both at the same time.
 
-Also, imagine a DOM node already has an attribute `disabled: true`, and you pass
-it to the reviver with `v(DOMNode, { disabled: false })`. Does it diff, and then
-call `removeAttribute('disabled')`? Not currently, but some implementations do
-and maybe for good reason?
+Not handling that also means reducing code complexity. Imagine a DOM node
+already has an attribute `disabled: true`, and you pass it to the reviver with
+`v(DOMNode, { disabled: false })`. What happens? Should it diff and then call
+`removeAttribute('disabled')`? Kinda needs to. Same goes for events and
+children, not just attributes. Mutation is hard - just look at the diff
+algorithms in virtual DOMs. It's a solved problem, but not this reviver's
+problem.
 
 ---
 
-~~Update on arrays as children; don't advise the use of an array. It's only
-meant for cases like:~~ No, actually. It's meant for indentation! Editors and
-linters will not understand otherwise. Use arrays at the top level! Nested
-arrays are only for cases like:
+You don't need to use an for children. In fact, an interesting minimization for
+code would be removing them all. Arrays make sense for `.map()`, or functions
+and components that return an array of children (yes,you _can_ return an array
+of children unlike React/Preact). You might be inclined to never use them
+directly to keep cleaner code, but most editors and linters will not understand
+the identation without an array,so you mileage may vary.
 
 ```js
 m('#ok', { ... }, anArray.map(item => m('li', item)))
+```
+
+And keep in mind just how easy it is find yourself writing nested arrays:
+
+```js
+v('#main', [
+  v('h1', 'Tags'),
+  v('hr'),
+  Object.entries(tags).map(([tag, posts]) =>
+    v('article', [
+      v('h2', { fontStyle: 'italic' }, `#${tag}`),
+      posts.forEach(post => v('p', post))
+    ])),
+])
+```
+
+Embracing arrays also has the added benefit of acting like fragments. Basically
+replacing them entirely. No one wants to have unnecessary tags. Example:
+
+```js
+ v(Layout, [
+  PostsModel.list.length > 0
+    ?
+    PostsModel.list.map((post, index) =>
+      v('.list-item', [
+        v('.share-box', [
+          v(`a.link-btn[href=${post.share.mastodon}]`, 'Mastodon'),
+          v(`a.link-btn[href=${post.share.vk}]`, 'VKontakte'),
+        ]),
+        v(`a[href=/post/${index}]`, v('h3', post.title)),
+        v('small', post.author),
+        v('p', post.body),
+      ]))
+    :
+    // would have otherwise needed to use a div or fragment here:
+    [
+      'No posts',
+      v('a[href=/post/new]', v('button.primary', 'New post')),
+    ],
+)]
 ```
 
 ## Proposed syntax
@@ -158,10 +230,11 @@ v('#main', {
   MyComponent({ size: 50, gridLines: true, class: 'center' }),
 
   // allow an uncalled component too. the reviver will call pass it both the
-  // props, attributes, and children. this is for JSX compatibility
+  // props, attributes, and children. fully JSX compatible
   v(AnotherComponent, { props, attributes })
 
-  // the only type of function as a selector is one that returns a selector
+  // you could (confusingly) build selectors (strings or functions) using
+  // functions. but maybe don't for everyone's sanity:
   v(FunctionThatReturnsSelector(), {})
 
   v('.btn.primary[disabled]', [
@@ -172,11 +245,11 @@ v('#main', {
       // it knows what values can have px appended
       // also note that style object properties are natively camelCase
       style: { fontSize: 8, opacity: 0.5 },
-      onclick: () => ...
+      onClick: () => ...
     }, 'Tap me')
   ]),
-
-  // needlessly nested but OK. no document fragment will be used
+  // needlessly nested but OK. a document fragment will _not_ be used
   [ 'Text', DOMNode ],
+  [[[ 'Text', DOMNode ]]],
 ])
 ```
