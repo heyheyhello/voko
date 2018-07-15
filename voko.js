@@ -98,19 +98,6 @@ export function v(selector) {
 
   // this is only for JSX compatibility
   // TODO: use hasOwnProperty in the final version
-  // TODO: filter children by boolean to support `expression && v(...`
-  if ('children' in attrs) {
-    const value = attrs.children
-    // this is interesting - it's like functions as children. do you let them
-    // recurse on forever? or force developers to flatten arrays or arrays?
-    // using a spread here isn't saving children from furthur nested arrays
-    if (Array.isArray(value)) {
-      children.push(...attrs.children)
-    } else {
-      children.push(attrs.children)
-    }
-    delete attrs.children // ? vs handle them in the loop
-  }
 
   if ('key' in attrs) {
     console.log('voko: ignoring virtual DOM key attribute')
@@ -118,7 +105,10 @@ export function v(selector) {
   }
 
   for (const [name, value] in Object.entries(attrs)) {
-    if (name === 'style') {
+    if (name === 'children') {
+      children.push(attrs.children)
+    }
+    else if (name === 'style') {
       if (!value || typeof value === 'string') {
         node.style.cssText = value || ''
       }
@@ -143,6 +133,7 @@ export function v(selector) {
       node.setAttribute(name, typeof value === 'boolean' ? '' : value)
     }
   }
-
-  // TODO: handle children
+  children.forEach(child => {
+    // TODO: typeof algorithm used in notes.md
+  })
 }
