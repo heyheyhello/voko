@@ -54,19 +54,176 @@ I don't have that.
 
 ## Allowed arguments
 
-Selectors can be either a string or function. Not any type of Node. If it's a
-function, you call it with the attributes and children and return. Other types,
-like DOM nodes, are only valid as children not selectors. Passing off to a
-function recursively is very similar to how arrays are handled - the reviver
-will simply keep calling/looping.
+Hyperscript revivers parse arguments in different ways regardless if they're
+building a DOM, a virtual DOM, or HTML strings.
 
-OK, so that fixes the JSX compatibility issue. Now the reviver can understand
-JSX (with a little bit of the usual Babel first). It's common in JSX to set
-styles without units and have them know when to default to _px_ (properties like
-opacity and flex do not have _px_). This was discussed in an issue thread on
-_hyperscript_, and they decided it was too hard to keep track to which
-properties it applies. However, Preact has a nice regex to check, which I've
-lifted to voko.
+The tree below shows a combination of styles for writing hyperscript supporting
+attributes in the tag and optionally as an object, and children as an array or
+list of arguments.
+
+```js
+h('#main', [
+  // allow merging classes in the tag with those in attributes
+  h('a[href=/][class=link].large', { class: 'bold center' }, 'Home'),
+  // allow a component (a function) to receive props and attributes
+  h(MyComponent, { size: 50, gridLines: true, class: 'center' }),
+  h('.btn.primary[disabled]',
+    // not an array of children
+    h('p', 'Button'),
+    'Text',
+    h('small', {
+      style: { ... },
+      className: 'blue'
+      onclick: () => ...
+    }, 'Tap me')
+  ),
+  // unusual document fragment syntax containing a text node and a DOM node
+  h('[', [ 'Text', DOMNode ]),
+])
+```
+
+The allowed syntax varies by implementation. The example maintains an order of
+arguments `tag, attributes?, children?` but not all revivers require that.
+
+Some implementations require all childrent to be DOM nodes, and maybe not
+automatically use `document.createTextNode`. Text would then need to be passed
+via attributes `.textContent`/`.innerText` or a special tag like `h('#',
+'Hello')`).
+
+The _hyperscript_ project decided to handle arguments as loosly as possible by
+making decisions based on their type and whether or not things like tags have
+been found yet. This which allows for any order and supports duplicate
+attributes interveled with children. It's possible that API is nicer to use?
+However it's very unconventional and might cause more harm than good. Also, the
+lack of structure means the code needs to parse all arguments before knowing for
+sure that it can't continue if it was never given a tag or component function.
+Algorithms that expect a structure will know immediately.
+
+An unusual structure that is still valid in _hyperscript_:
+
+```js
+h({ id: 'hello' }, [
+  h(ChildComponent)
+], '#ignoredId.red', 'Some text', { class: 'bold' })
+```
+
+Their algorithm checks if a parent has been made yet to apply attributes. It
+will have not, so a div is made with id set to 'hello'. Other strings are text
+nodes there there on out...
+
+Equivalent to:
+
+```html
+<div id='hello' class='bold'>
+  <ChildComponent ... >
+  #ignoredId.red
+  Some text
+</div>
+```
+
+There's tradeoffs to every approach, but the format of `tag, attributes?,
+children?` is not a lot to ask for and is likely expected by developers at this
+point. It may be best to not allow confusing syntax from the start. Mithril and
+Preact each expect that argument order to be able to handle JSX. Preact,
+following React, expects you to write in JSX so it requires the attribute
+parameter since Babel always transpile to include it. Mithril however, supports
+JSX but doesn't expect developers to use it so it's more flexible and treats
+attributes as an optional second parameter.
+
+Here's Mithril's argument flow allowing for optional attributes:
+
+```js
+function h(selector) {
+  if (!selector) {
+    throw Error(...)
+  }
+  let attrs = arguments[1], start = 2, children
+  if (!attrs) {
+    attrs = {}
+  } else if (attrs is not an object, it has a tag, or is array) {
+    // this 'attrs' is actually a child, so they skipped attributes
+    attrs = {}
+    start = 1 // start counting children one spot earlier
+  }
+  ...
+}
+```
+
+Compared to Preact's:
+
+```js
+export function h(nodeName, attributes) {
+  let children = EMPTY_CHILDREN, lastSimple, child, simple, i;
+  for (i = arguments.length; i-- > 2; ) {
+    stack.push(arguments[i]);
+  }
+  ...
+}
+```
+
+In voko, a selector can be either a string or function. Not any type of node. If
+it's a function, it will be passed the attributes and children, and expected to
+return a DOM node after handling all children. This is the same as JSX. DOM
+nodes are only valid as children, not selectors. Passing off to a function
+recursively is very similar to how arrays are handled - the reviver will simply
+keep calling/looping.
+
+## Tree traversal
+
+Preact, _hyperscript_, and vhtml don't seem to traverse children at all. I
+believe they expect them to be already evaluated due to the nature of the JS
+evaluating the called function as it encounters each child. There's a function
+stack that is emptied from the leafs to the root. Not the other way around, even
+though that's how we code looks like it's traversing it.
+
+However, Mithril does actually mention traversing the tree depth first from the
+root down, as children of each parent are handled by _"normalizing"_ them
+recursively using `Vnode.normalizeChildren` as seen here (paraphrased):
+
+```js
+const Vnode = (tag, key, attrs, children, text, dom) =>
+  ({ tag, key, attrs, children, text, dom, domSize: undefined, state: undefined, events: undefined, instance: undefined })
+}
+
+Vnode.normalize = node => {
+  if (Array.isArray(node))
+    return Vnode("[", undefined, undefined, Vnode.normalizeChildren(node), undefined, undefined)
+  if (node != null && typeof node !== "object")
+    return Vnode("#", undefined, undefined, node === false ? "" : node, undefined, undefined)
+	return node
+}
+
+Vnode.normalizeChildren = input => input.map(Vnode.normalize)
+```
+
+## Case sensitivity of DOM events
+
+Because attributes are often merged into a DOM node's properties, it makes sense
+to have functions like `onclick` be lowercase as object properties are case
+sensitive and always lowercase. However, no implementations actually apply
+events by assigning an object that way. This is because only _one_ function can
+be registered to an event that way. The more flexible approach is to use the DOM
+API `addEventListener()`.
+
+I think it's more readable to use a JSX/React-like capitalized `onClick` syntax,
+but it seems like it doesn't matter at all - everything just gets lowercased in
+the end. Example Inferno (which also uses JSX) code:
+
+From _inferno/src/DOM/events/delegation.ts_
+
+```js
+function normalizeEventName(name) {
+  return name.substr(2).toLowerCase();
+}
+```
+
+## CSS
+
+It's common in JSX to set styles without units and have them know when to
+default to _px_ (properties like opacity and flex do not have _px_). This was
+discussed in an issue thread on _hyperscript_, and they decided it was too hard
+to keep track to which properties it applies. However, Preact has a nice regex
+to check, which I've lifted to voko.
 
 Mithril has some test cases on CSS:
 
