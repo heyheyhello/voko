@@ -295,8 +295,14 @@ and provides some insight on how to build an efficient interpreter.
 Nothing provides a way to create DOM content using CSS selector shorthand like
 Mithril without a virtual DOM, and with a goal of components like vhtml.
 
-I need to make one, it seems. I've started writing in _implementation.md_ to
-decide what syntax it will support.
+Skatejs has _val_ which is a virtual DOM abstraction hypervisor that plugs into
+React and Preact virtual DOMs and the real DOM. It seperates attributes, events,
+and props into `{ attrs: {}, events: {}, ...props }` and mentions that the way
+Preact, Mithril, and this reviver use `attr in DOMNode` might not be compatible
+with web-components. That's OK for now.
+
+I need to make one, it seems. I've started writing in _notes.md_ to decide what
+syntax it will support.
 
 _Update:_ Don't accept a DOM Node as a selector. Don't modify existing nodes,
 only support creating new nodes. Don't create document fragments - there's no
@@ -304,23 +310,40 @@ reason to for now. Support nested arrays and DOM nodes as children, however.
 Don't encourage using "top-level" arrays. They're only really supported for
 children like `.map()` which will return an array.
 
-Proposed example (haven't decided on a style):
+Proposed syntax:
 
 ```js
-h('#main',
-  h('a.large[href=/]', 'Home'),
-  h(MyComponent,
-    { size: 50, class: 'center' }
-  ),
-  h('section.primary',
+const header = v('header', { style: 'background:"#fff"' })
+const existingNode = document.querySelector('#existing')
+
+const ButtonComponent = props => {
+  // ES7: https://github.com/tc39/proposal-object-rest-spread
+  const { size, children, ...other } = props
+  return v('a.btn', { style: { fontSize: size }, ...other }, children)
+}
+
+v('#main', [
+  v('nav.large', [
+    v('a.link[href=/][disabled]', 'Home'),
+  ]),
+  header,
+  v('h1', 'Tags'),
+  v('hr'),
+  Object.entries(tags).map(([tag, posts]) =>
+    v('article', [
+      v('h2', { fontSize: 18 }, `#${tag}`),
+      v('small', posts.length),
+      posts.forEach(post => v('p', post)),
+    ])),
+  v(ButtonComponent, { size: 50, class: 'center' }, 'TapTap'),
+  v('section.primary', [
     'Text',
-    h('p', 'Button'),
-    h('small',
-      { style: { ... }, className: 'blue', onClick() { ... } },
-      'Tap me'
-    )
-  ),
-  document.createElement('div')
-  anArray.map(item => h('li.item', item)),
+    v('p', 'Hello'),
+    v('small.bold[style=fontStyle:"italic"]', {
+      className: 'blue',
+      onClick() { ... }
+    }, 'Tap me'),
+  ]),
+  existingNode,
 ])
 ```
