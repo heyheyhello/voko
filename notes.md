@@ -53,10 +53,16 @@ h({ id: 'hello' }, [
 ], '#ignoredId.red', 'Some text', { class: 'bold' })
 ```
 
+Their algorithm checks if a parent has been made yet to apply attributes. It
+will have not, so a div is made with id set to 'hello'. Other strings are text
+nodes there there on out...
+
 Equivalent to:
-```
-<div id='hello' class='red bold'>
+
+```html
+<div id='hello' class='bold'>
   <ChildComponent ... >
+  #ignoredId.red
   Some text
 </div>
 ```
@@ -133,9 +139,14 @@ Vnode.normalizeChildren = input => input.map(Vnode.normalize)
 
 Because attributes are often merged into a DOM node's properties, it makes sense
 to have functions like `onclick` be lowercase as object properties are case
-sensitive and always lowercase. However, I agree that it's more readable to use
-a JSX/React like `onClick` syntax instead. In Inferno, which also uses JSX, the
-process of normalizing event names is as simple as it sounds:
+sensitive and always lowercase. However, no implementations actually apply
+events by assigning an object that way. This is because only _one_ function can
+be registered to an event that way. The more flexible approach is to use the DOM
+API `addEventListener()`.
+
+I think it's more readable to use a JSX/React-like capitalized `onClick` syntax,
+but it seems like it doesn't matter at all - everything just gets lowercased in
+the end. Example Inferno (which also uses JSX) code:
 
 From _inferno/src/DOM/events/delegation.ts_
 
