@@ -1,0 +1,22 @@
+{
+  "name": "voko",
+  "version": "1.0.0",
+  "description": "Hyperscript reviver for the DOM",
+  "main": "voko.js",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/nthm/voko.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://gitlab.com/nthm/voko/issues"
+  },
+  "homepage": "https://gitlab.com/nthm/voko#README",
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb-base": "^13.0.0",
+    "eslint-plugin-import": "^2.13.0"
+  }
+}
