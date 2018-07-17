@@ -4,11 +4,7 @@
 // matches CSS selectors into a tag, id/classes (via #/.), and attributes
 // lifted from mithril
 const selectorRegex = /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*('|'|)((?:\\[''\]]|.)*?)\5)?\])/g
-// vs new Map()?
 const selectorCache = {}
-
-// unsure if this will ever be used
-const eventStore = new WeakMap()
 
 // numeric CSS properties which shouldn't have 'px' automatically suffixed
 // lifted from preact: https://github.com/developit/preact/commit/73947d6abc17967275d9ea690d78e5cf3ef11e37
@@ -74,9 +70,13 @@ export function v(selector) {
     children = []
     while (start < arguments.length) children.push(arguments[start++])
   }
+  if (attrs && attrs.children) {
+    if (!children.length) children.push(children)
+    delete attrs.children
+  }
   if (type !== 'string') {
     // component is a function, let it do it's own rendering
-    return selector(attrs, children)
+    return selector(attrs)
   }
 
   // state is a tag and attributes (class, id, etc) derived from the selector
@@ -105,10 +105,7 @@ export function v(selector) {
   }
 
   for (const [name, value] in Object.entries(attrs)) {
-    if (name === 'children') {
-      children.push(attrs.children)
-    }
-    else if (name === 'style') {
+    if (name === 'style') {
       if (!value || typeof value === 'string') {
         node.style.cssText = value || ''
       }
@@ -123,7 +120,6 @@ export function v(selector) {
     }
     else if (name[0] == 'o' && name[1] == 'n') {
       const event = name.toLowerCase().substring(2)
-      // TODO: eventStore.set(node, { [event]: value })
       node.addEventListener(event, value)
     }
     else if (name in node) { // && !isAttribute i.e href/list/form/width/height?
@@ -134,6 +130,17 @@ export function v(selector) {
     }
   }
   children.forEach(child => {
-    // TODO: typeof algorithm used in notes.md
+    if (child instanceof HTMLElement) {
+      node.appendChild(child)
+    }
+    else if (Array.isArray(child)) {
+      
+    }
+    else if (typeof child === 'object') {
+      throw new Error('Unexpected object as child. Wrong order of attributes?')
+    }
+    else {
+      node.appendChild(document.createTextNode(child))
+    }
   })
 }
