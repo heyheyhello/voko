@@ -113,7 +113,7 @@ const v = selector => {
         eventMap.set(element, events)
         continue
       }
-      if (name in element) { // && !isAttribute i.e href/list/form/width/height?
+      if (name in element) {
         element[name] = value
         continue
       }
