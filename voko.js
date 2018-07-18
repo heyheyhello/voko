@@ -22,6 +22,8 @@ const styleNoUnit = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i
  * - the spellcheck attribute needs to be handled care for updates and removal
  * - late attributes for select elements; value and selectedIndex can only be
  *   meaningfully set once the node is live
+ * - props.children; instead, { attrs, children } is passed like in Mithril
+ * - anything virtual DOM realted such as `key`
  *
  * I've also decided to not support mutating DOM nodes, which means it's not
  * possible to call a component and have its result passed into the reviver. The
@@ -70,13 +72,9 @@ export function v(selector) {
     children = []
     while (start < arguments.length) children.push(arguments[start++])
   }
-  if (attrs && attrs.children) {
-    if (!children.length) children.push(children)
-    delete attrs.children
-  }
   if (type !== 'string') {
     // component is a function, let it do it's own rendering
-    return selector(attrs)
+    return selector({ attrs, children })
   }
 
   // state is a tag and attributes (class, id, etc) derived from the selector
@@ -95,14 +93,6 @@ export function v(selector) {
 
   // class is merged. delete it. it's safe to delete attributes that don't exist
   delete attrs.class
-
-  // this is only for JSX compatibility
-  // TODO: use hasOwnProperty in the final version
-
-  if ('key' in attrs) {
-    console.log('voko: ignoring virtual DOM key attribute')
-    delete attrs.key
-  }
 
   for (const [name, value] in Object.entries(attrs)) {
     if (name === 'style') {
@@ -126,6 +116,7 @@ export function v(selector) {
       node[name] = value
     }
     else {
+      // worst case, attributes will coerce like `...children=[object Object]>`
       node.setAttribute(name, typeof value === 'boolean' ? '' : value)
     }
   }
@@ -134,7 +125,7 @@ export function v(selector) {
       node.appendChild(child)
     }
     else if (Array.isArray(child)) {
-      
+      // TODO:
     }
     else if (typeof child === 'object') {
       throw new Error('Unexpected object as child. Wrong order of attributes?')

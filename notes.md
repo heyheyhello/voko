@@ -374,6 +374,104 @@ replacing them entirely. No one wants to have unnecessary tags. Example:
 )]
 ```
 
+## Component props and JSX compatibility
+
+All libraries have different ways of passing information to components. The
+information to convey is usually refered to as `props` but the schema varies.
+
+React-like libraries lump together all DOM attributes, events, component
+parameters (such as data), and children into the top level of an object. These
+props are merged with default props during rendering. State is not in props,
+although Preact does allow for shorthand to access state, props, and context in
+their render call (unrelated).
+
+In Mithril, a component receives a vnode from the virtual DOM tree on render. A
+vnode is a normal object with keys describing everything about an element. Of
+those keys, `attrs`, `state`, and `children` are most comparable to props. The
+object `attrs` holds component parameters, DOM attributes, and events. The
+import thing to note is that children are seperated and _everything_ in the
+virtual DOM tree is accessible to a component.
+
+Mithril:
+
+```js
+var Greeter = {
+  view: function(vnode) {
+    return m('div', vnode.attrs, ['Hello ', vnode.children])
+  }
+}
+var Counter = {
+  count: 0,
+  view: function(vnode) {
+    return m('div',
+      m('p', 'Count: ' + vnode.state.count ),
+      m('button', {
+        onclick: () => { vnode.state.count++ }
+      }, 'Increase count')
+    )
+  }
+}
+```
+
+Other libraries decided to define an even more seperated schema for props. Val,
+from Skate.js, uses top level properties `attr: {}` and `events: {}` to seperate
+DOM attribute and events from other top level properties which are treated as
+parameters for components. This is good for name conflicts, but means more
+objects would need to be written when defining props. It's the least confusing
+of all implementations.
+
+In case you're curious, props in Preact are defined as:
+
+```js
+type RenderableProps<Props, RefType = any> = Readonly<
+  Props & Attributes & { children?: ComponentChildren; ref?: Ref<RefType> }
+>;
+```
+
+Not dealing with a vitual DOM; I don't have `ref` to consider. But children are
+something of interest. In Preact, children are _always_ an array. Which is nice
+compared to React, where it's unclear what type children will be. I follow this
+as well.
+
+---
+
+What does it mean to be JSX compatible? The lack of a definition becomes an
+issue when components props and children are considered. All implementations
+pass a single object to a component, either props or a vnode. Here's Preact
+adding children to props:
+
+```js
+/**
+ * Reconstruct Component-style `props` from a VNode.
+ * Ensures default/fallback values from `defaultProps`:
+ * Own-properties of `defaultProps` not present in `vnode.attributes` are added.
+ * @param {import('../vnode').VNode} vnode The VNode to get props for
+ * @returns {object} The props to use for this VNode
+ */
+export function getNodeProps(vnode) {
+  let props = extend({}, vnode.attributes);
+  props.children = vnode.children;
+
+  let defaultProps = vnode.nodeName.defaultProps;
+  if (defaultProps !== undefined) {
+    for (let i in defaultProps)
+      if (props[i] === undefined) props[i] = defaultProps[i];
+  }
+  return props;
+}
+```
+
+So the convention for React-like libraries is to override any children from
+attributes with the actual children from the reviver (i.e the arguments after
+the selector and attributes).
+
+However, none of this matters because voko is a reviver - so JSX compatibility
+only goes as far as having JSX transpile nicely to hyperscript. It has nothing
+to do with how components work, or how they communicate.
+
+Components will never be mix and match between libraries. Not without doing a
+virtual DOM and component lifecycle which is far beyond a reviver.
+
 ## Proposed syntax
 
 ```js
