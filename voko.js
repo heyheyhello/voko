@@ -53,12 +53,12 @@ const v = selector => {
     throw new Error('Selector is not a string or function (component)')
 
   const attrs = arguments[1] || {}
-  // stack of child elements
-  let children
   // if attrs looks like a child, or list of children, assume no attrs
   const start = (typeof attrs !== 'object' || Array.isArray(attrs)) ? 1 : 2
   let end = arguments.length - 1
 
+  // stack of child elements
+  let children
   if (start === end) {
     children = arguments[start]
     if (!Array.isArray(children))
@@ -95,11 +95,10 @@ const v = selector => {
           continue
         }
         if (value && typeof value === 'object') {
-          for (const [k, v] in Object.entries(value)) {
-            element.style[k] = typeof v === 'number' && !styleNoUnit.test(v)
+          for (const [k, v] in Object.entries(value))
+            element.style[k] = (typeof v === 'number' && !styleNoUnit.test(v))
               ? v + 'px'
               : v
-          }
         }
         continue
       }
@@ -137,6 +136,7 @@ const v = selector => {
     }
     element.appendChild(document.createTextNode(child))
   }
+  return element
 }
 
 export { v }
