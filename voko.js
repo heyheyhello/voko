@@ -55,25 +55,24 @@ const v = selector => {
   const attrs = arguments[1] || {}
   // stack of child elements
   let children
-  // index beyond which allarguments are considered children
-  let start = 2
-
   // if attrs looks like a child, or list of children, assume no attrs
-  if (typeof attrs !== 'object' || Array.isArray(attrs)) start = 1
+  const start = (typeof attrs !== 'object' || Array.isArray(attrs)) ? 1 : 2
+  let end = arguments.length - 1
 
-  // read as: if last index of array is the start children index
-  if (arguments.length - 1 === start) {
+  if (start === end) {
     children = arguments[start]
     if (!Array.isArray(children))
       children = [children]
   } else {
-    // MDN: `arguments.slice()` has optimization issues
+    // add to the stack (backwards)
     children = []
-    while (start < arguments.length)
-      children.push(arguments[start++])
+    while (start < end)
+      children.push(arguments[end--])
   }
+
   // component is a function, let it do it's own rendering
-  if (type !== 'string') return selector({ attrs, children })
+  if (type !== 'string')
+    return selector({ attrs, children })
 
   const {
     tag, selectorAttrs
