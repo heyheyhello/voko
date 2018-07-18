@@ -13,18 +13,18 @@ const styleNoUnit = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i
 
 const parseSelector = selector => {
   const classes = []
-  const attrs = {}
+  const selectorAttrs = {}
   let tag = 'div'
 
   let match
   while (match = selectorRegex.exec(selector)) {
-    const [type, value] = match
+    const [all, type, value] = match
     if (type === '' && value !== '') {
       tag = value
       continue
     }
     if (type === '#') {
-      attrs.id = value
+      selectorAttrs.id = value
       continue
     }
     if (type === '.') {
@@ -38,39 +38,46 @@ const parseSelector = selector => {
       if (match[4] === 'class')
         classes.push(attrValue)
       else
-        attrs[match[4]] = attrValue === ''
+        selectorAttrs[match[4]] = attrValue === ''
           ? attrValue
           : attrValue || true
     }
   }
   if (classes.length > 0)
-    attrs.className = classes.join(' ')
+    selectorAttrs.className = classes.join(' ')
 
-  return selectorCache[selector] = { tag, attrs }
+  return selectorCache[selector] = { tag, selectorAttrs }
 }
 
-const v = selector => {
+const v = (selector, ...args) => {
   const type = typeof selector
-  if (type !== 'string' || type !== 'function')
+  if (type !== 'string' && type !== 'function')
     throw new Error('Selector is not a string or function (component)')
 
-  const attrs = arguments[1] || {}
+  // args[0] may be an object of attributes. all other args are children
+  let attrs = args[0] || {}
   // if attrs looks like a child, or list of children, assume no attrs
-  const start = (typeof attrs !== 'object' || Array.isArray(attrs)) ? 1 : 2
-  let end = arguments.length - 1
+  let start = 1
+  let end = args.length - 1
+  if (typeof attrs !== 'object' || Array.isArray(attrs)) {
+    start = 0
+    attrs = {}
+  }
 
   // stack of child elements
   let children
   if (start === end) {
-    children = arguments[start]
+    children = args[start]
     if (!Array.isArray(children))
       children = [children]
   } else {
     // add to the stack (backwards)
     children = []
-    while (start < end)
-      children.push(arguments[end--])
+    // console.log(start, end)
+    while (start <= end)
+      children.push(args[start++])
   }
+  children.reverse()
 
   // component is a function, let it do it's own rendering
   if (type !== 'string')
@@ -83,12 +90,11 @@ const v = selector => {
   const element = document.createElement(tag)
 
   // overwrite (or stack) attributes in the selector with those in attrs
+  const classes = []
   for (const attributes of [selectorAttrs, attrs]) {
-    for (const [name, value] in Object.entries(attributes)) {
+    for (const [name, value] of Object.entries(attributes)) {
       if (name === 'class' || name === 'className') {
-        element.className = value !== ''
-          ? `${element.className} ${value}`
-          : value
+        classes.push(value)
         continue
       }
       if (name === 'style') {
@@ -97,7 +103,7 @@ const v = selector => {
           continue
         }
         if (value && typeof value === 'object') {
-          for (const [k, v] in Object.entries(value))
+          for (const [k, v] of Object.entries(value))
             element.style[k] = (typeof v === 'number' && !styleNoUnit.test(v))
               ? v + 'px'
               : v
@@ -121,6 +127,9 @@ const v = selector => {
       element.setAttribute(name, typeof value === 'boolean' ? '' : value)
     }
   }
+  if (classes.length)
+    element.className = classes.join(' ')
+
   let child
   while (child = children.pop()) {
     if (!child) {
