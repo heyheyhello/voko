@@ -38,7 +38,7 @@ return v('main', [
 const header = <header class='OK'>...</header>
 return (
   <main>
-    <{header} ... /> // kind of like saying "<<header>>"? bad.
+    <{header} ... /> // kind of like saying '<<header>>'? bad.
   </main>
 )
 ```
@@ -187,10 +187,10 @@ const Vnode = (tag, key, attrs, children, text, dom) =>
 
 Vnode.normalize = node => {
   if (Array.isArray(node))
-    return Vnode("[", undefined, undefined, Vnode.normalizeChildren(node), undefined, undefined)
-  if (node != null && typeof node !== "object")
-    return Vnode("#", undefined, undefined, node === false ? "" : node, undefined, undefined)
-	return node
+    return Vnode('[', undefined, undefined, Vnode.normalizeChildren(node), undefined, undefined)
+  if (node != null && typeof node !== 'object')
+    return Vnode('#', undefined, undefined, node === false ? '' : node, undefined, undefined)
+  return node
 }
 
 Vnode.normalizeChildren = input => input.map(Vnode.normalize)
@@ -228,22 +228,22 @@ to check, which I've lifted to voko.
 Mithril has some test cases on CSS:
 
 ```js
-m("button-bar",
-  m("button",
-    {style: "width:10px; height:10px; border:1px solid #FFF;"},
-    "Normal CSS"
+m('button-bar',
+  m('button',
+    {style: 'width:10px; height:10px; border:1px solid #FFF;'},
+    'Normal CSS'
   ),
-  m("button",
-    {style: "top:0 ; right: 20"},
-    "Poor CSS"
+  m('button',
+    {style: 'top:0 ; right: 20'},
+    'Poor CSS'
   ),
-  m("button",
-    {style: "invalid-prop:1;font:12px/1.1 arial,sans-serif;", icon: true},
-    "Poorer CSS"
+  m('button',
+    {style: 'invalid-prop:1;font:12px/1.1 arial,sans-serif;', icon: true},
+    'Poorer CSS'
   ),
-  m("button",
-    {style: {margin: 0, padding: "10px", overflow: "visible"}},
-    "Object CSS"
+  m('button',
+    {style: {margin: 0, padding: '10px', overflow: 'visible'}},
+    'Object CSS'
   )
 )
 ```
@@ -323,7 +323,7 @@ problem.
 
 ---
 
-You don't need to use an for children. In fact, an interesting minimization for
+You don't need an array for children. In fact, an interesting minimization for
 code would be removing them all. Arrays make sense for `.map()`, or functions
 and components that return an array of children (yes,you _can_ return an array
 of children unlike React/Preact). You might be inclined to never use them
