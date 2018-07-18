@@ -322,17 +322,17 @@ v('#main', [
   v('hr'),
   Object.entries(tags).map(([tag, posts]) =>
     v('article', [
-      v('h2', { fontSize: 18 }, `#${tag}`),
-      v('small', posts.length),
+      v('h2', { style: { fontSize: 18 } }, `#${tag}`),
+      v('small', `Post count: ${posts.length}`),
       posts.forEach(post => v('p', post)),
     ])),
   v(ButtonComponent, { size: 50, class: 'center' }, 'TapTap'),
   v('section.primary', [
     'Text',
     v('p', 'Hello'),
-    v('small.bold[style=fontStyle:"italic"]', {
+    v('small.bold[style=fontStyle:italic]', {
       className: 'blue',
-      onClick() { ... }
+      onClick() {},
     }, 'Tap me'),
   ]),
   existingNode,
