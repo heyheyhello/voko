@@ -1,65 +1,78 @@
-Issue with what's actually being returned by an invocation of the reviver. I
-guess... unlike React/Mithril/etc where you expect the framework to convert your
-tree to a virtual DOM and handle mounting it for you, this will need to return
-an actual DOM node. Always. This is nice because to get a reference to a DOM
-node in a virtual DOM library you need `{ ref={node => this.node = node} }` as
-an attribute, but here all you do is `const header = v(...)`
+# Notes
 
-Possible children:
-  - __DOM nodes__. Append to the parent.
-  - __Arrays__. For each, rerun this possible children algorithm. Yes this has
-    the possibility of running away and blowing the call stack, just like
-    invoking a component. Doesn't matter.
-  - __Objects (including functions)__. Likely an error. Maybe they tried to
-    apply attributes in the wrong place? Maybe they forgot to wrap their
-    component in `v(...)`. Throw.
-  - __Everything else__. Wrapped in a text node and append. This works for
-    dates, regex, numbers, and anything that has a `.toString()`
+This document decides what features, syntax, and cases to support for voko.
+It goes over how related libraries and frameworks are written, and how their
+scopes overlap or differ from this reviver.
+
+In these notes, generally React and Preact are referencing all React-like
+frameworks such as Inferno.
+
+Mithril, Preact, Val (Skate.js), and other many other libraries support features
+that I'm __not__ interested in supporting for now. Here's a short list.
+
+Not supporting:
+
+- __Custom Elements__ since they require forwarding the `is:` attribute into
+  `document.createElement`
+- __Namespaces__ such as SVGs and MathML. Not difficult to implement but not
+  necessary for now.
+- __Modifying nodes__. Updating and removing attibutes is well beyond the scope
+  of a reviver, even if it seemed fitting at first.
+- __HTML error correction__. Mithril corrects and auto-creates parent elements
+  when needed, such as auto creating `<table>` if using a `<td>` in a `<div>`
+  to prevent the browser from removing the `<td>` node entirely.
+- __IE 11__. An example: Only IE 11 need `setAttribute()` for `input[type=...]`
+- __Spellcheck attribute__. Needs to be handled carefully for updates and
+  removal, but the reviver does not need to consider modifications.
+- __Late attributes for `<select>` elements__; The `value` and `selectedIndex`
+  attributes can only be meaningfully set once the node is live. Ignore them.
+- __React-like props__. Discussed in this document. Specifically seperating
+  children from `props.children` and instead using `{ attrs, children }` for
+  components; this is what Mithril does.
+- __Virtual DOM things__. Such as `key`, which will just fallback to using
+  `setAttribute()`
+
+## Selector
+
+A valid selector is a string or a function (which is called assuming it is a
+component that will return a DOM node). Originally a selector could be a DOM
+node as well, as a way of easily mutating existing elements like
+`v($('#main'), { ... })`. However, it would add a lot of complexity to implement
+that, and lowkey requires writing a DOM diffing algorithm which is not in the
+scope of the reviver.
+
+See the proposed syntax in readme.md or at the end of this document.
+
+## Children
+
+These are the possible children for the reviver to handle, and how they are
+treated. Children are kept on a stack, as seen in _hyperscript_ and vhtml
+because it makes the most sense to avoid the call stack.
+
+- __DOM nodes__. Appended to the parent.
+- __Arrays__. The reverse of the array is added to the stack of children,
+  meaning the first child will be the first to be processed.
+- __Objects (including functions)__. Are likely an error as children. Maybe they
+  tried to apply attributes in the wrong place? Or forgot to wrap their
+  component in `v(...)`. An error is thrown.
+- __Everything else__. Wrapped in a text node and appended. This works for
+  dates, regex, numbers, and anything that has a `.toString()`
 
 Since this is the DOM, components are static and take care of updating
-themselves however they choose to. They'll return a DOM node after being given
-props.
-
-There's one hiccup with that, which is trying to create a DOM node using a DOM
-node. This would be mutating an existing node and isn't something the reviver
-should be responsible for - doing so would mean understanding how to remove and
-merge attributes, events, and children. Let's not. This is the same as JSX, but
-easier to do by accident in hyperscript due to the syntax:
-
-```js
-// voko:
-const header = v('header.ok', { ... } ...) // DOM node. not a component
-return v('main', [
-  v(header, { ... }), // wouldn't make sense, though it looks like a component
-  v('p', 'Hello'),
-])
-
-// JSX:
-const header = <header class='OK'>...</header>
-return (
-  <main>
-    <{header} ... /> // kind of like saying '<<header>>'? bad.
-  </main>
-)
-```
-
-This is probably best avoided by using capitalization for component names as the
-communities already do.
-
-In React/Mithril/etc the framework needs to update components as props change,
-so `h(MyComponent, {})` (`<MyComponent />`) makes sense because the function
-needs to have _not_ been called, so it can be called on each render/lifecycle.
-
-I don't have that.
+themselves however they choose to. They'll return a DOM node after being passed
+attributes and children. In React/Mithril/etc the framework needs to update
+components as props and state change. This reviver will not have that.
 
 ## Allowed arguments
 
-Hyperscript revivers parse arguments in different ways regardless if they're
-building a DOM, a virtual DOM, or HTML strings.
+All hyperscript revivers, for either the DOM, a virtual DOM, or HTML strings,
+seem to parse arguments differently. This section looks at the various
+flexibilities.
 
-The tree below shows a combination of styles for writing hyperscript supporting
-attributes in the tag and optionally as an object, and children as an array or
-list of arguments.
+The sample below shows a combination of styles for writing hyperscript
+supporting attributes in the tag and optionally as an object, and children as an
+array or list of arguments. This isn't a real syntax, but a mix of existing
+syntax from many projects:
 
 ```js
 h('#main', [
@@ -69,7 +82,11 @@ h('#main', [
   h(MyComponent, { size: 50, gridLines: true, class: 'center' }),
   h('.btn.primary[disabled]',
     // not an array of children
-    h('p', 'Button'),
+    h('p', 'Button', {
+      events: {
+        click() { ... }
+      }
+    }),
     'Text',
     h('small', {
       style: { ... },
@@ -82,22 +99,21 @@ h('#main', [
 ])
 ```
 
-The allowed syntax varies by implementation. The example maintains an order of
-arguments `tag, attributes?, children?` but not all revivers require that.
+There's no standard syntax for hyperscript. The example above maintains an order
+of arguments `tag, attributes?, children?` but not all revivers even need that.
+Here's an interesting thread discussing API syntax of various hyperscript
+libraries:
 
-Some implementations require all childrent to be DOM nodes, and maybe not
-automatically use `document.createTextNode`. Text would then need to be passed
-via attributes `.textContent`/`.innerText` or a special tag like `h('#',
-'Hello')`).
+https://github.com/hyperhype/hyperscript/issues/66
 
-The _hyperscript_ project decided to handle arguments as loosly as possible by
-making decisions based on their type and whether or not things like tags have
-been found yet. This which allows for any order and supports duplicate
-attributes interveled with children. It's possible that API is nicer to use?
-However it's very unconventional and might cause more harm than good. Also, the
-lack of structure means the code needs to parse all arguments before knowing for
-sure that it can't continue if it was never given a tag or component function.
-Algorithms that expect a structure will know immediately.
+That project, _hyperscript_, handles arguments as loosly as possible and makes
+decisions based on their type and whether or not things like tags have been
+found yet. Arguments are in any order, and duplicate attributes can be
+interveled with children. It's possible that API is nicer to use to some people,
+but it may also cause more harm than good. The lack of structure means the code
+needs to parse all arguments before knowing for sure that it can't continue if
+it was never given a tag or component function. Algorithms that expect a
+structure will know immediately.
 
 An unusual structure that is still valid in _hyperscript_:
 
@@ -121,14 +137,13 @@ Equivalent to:
 </div>
 ```
 
-There's tradeoffs to every approach, but the format of `tag, attributes?,
-children?` is not a lot to ask for and is likely expected by developers at this
-point. It may be best to not allow confusing syntax from the start. Mithril and
-Preact each expect that argument order to be able to handle JSX. Preact,
-following React, expects you to write in JSX so it requires the attribute
-parameter since Babel always transpile to include it. Mithril however, supports
-JSX but doesn't expect developers to use it so it's more flexible and treats
-attributes as an optional second parameter.
+There's tradeoffs to every approach, but `tag, attributes?, children?` is not a
+lot to ask for and is expected by developers from HTML. Mithril and Preact each
+expect that argument order to be able to handle JSX. Preact, following React,
+expects you to write in JSX so it requires the attribute parameter since Babel
+always transpile to include it. Mithril however, supports JSX but doesn't expect
+developers to use it so it's more flexible and treats attributes as an optional
+second parameter.
 
 Here's Mithril's argument flow allowing for optional attributes:
 
@@ -161,12 +176,11 @@ export function h(nodeName, attributes) {
 }
 ```
 
-In voko, a selector can be either a string or function. Not any type of node. If
+As mentioned, this reviver will allow a selector to be a string or function. If
 it's a function, it will be passed the attributes and children, and expected to
 return a DOM node after handling all children. This is the same as JSX. DOM
-nodes are only valid as children, not selectors. Passing off to a function
-recursively is very similar to how arrays are handled - the reviver will simply
-keep calling/looping.
+nodes are only valid as children, not selectors. Function may call recursively,
+and the reviver will simply keep calling.
 
 ## Tree traversal
 
@@ -248,18 +262,16 @@ m('button-bar',
 )
 ```
 
-There's a long thread about the API of hyperscript, which is what I'm dealing
-with now...
-https://github.com/hyperhype/hyperscript/issues/66
-
 Some libraries take a `props` object that defines _both_ `events` and `attrs` to
 allow for regex-less event listener names. Others allow namespacing for XML!
 Another uses `hooks` like `beforeRevomal` to aid in transitions...wew.
 
-The Mithril author chimed in at the end of issue #66 and lays down some great
-points: JSX compatibility should be prioritized - some people will never want to
-write in hyperscript directly and that's just the way it is. Next, try to
-support the existing HTML and JS APIs. He also mentions variations in those:
+The Mithril author chimed in at the end of issue #66 (mentioned earlier). He
+mentioned JSX that compatibility should be prioritized since some people will
+never write hyperscript directly (even if it's short/better/compile-less) and
+that's just a fact. Otherwise, try supporting existing HTML and JS APIs.
+
+He also mentions hiccups in those:
 
 > There are variations in how attributes are handled, with some implementations
 > allowing `class`, `readonly`, `contenteditable` instead of `className` /
@@ -287,36 +299,28 @@ The Mithril author makes it sound like the reviver/renderer would need a very
 long list of if statements to check all attribute edge cases, but actually it's
 as easy as `attr in node ? node[attr] = ... : node.setAttribute(attr, ...)`.
 
----
-
-I'd like to be Mithril compatible, which is therefore also JSX compatible. Then
-I'll also write a small version for projects that are only for _you_ and don't
-need compatibility with anything.
+This reviver will be JSX compatible. A smaller version can be written for
+projects that don't need compatibility with anything.
 
 Compatibility also extends to web-components. Some libraries spend a great
 amount of code ensuring they're properly supported. The `is` attribute must be
-taken out (like events are) from other attributes and
+taken out (like events are) from other attributes:
 
 ```js
 document.createElement('div', { is: 'my-list-item' })
 ```
 
----
+I won't support that for now since I do not use custom elements (sorry!).
 
-Considered accepting a DOM node in previous versions. Not that I was expecting
-to write anything like `v(v(v('div')))`, but it meant you can add attributes and
-children to an existing DOM node, which is neat. An example might be:
-`v($('.findMe'), { onClick: () => {} })`. However, I was reminded that a reviver
-does not mutate anything. Accepting an attached DOM node is kinda...hmm; as
-someone in a _hyperscript_ issue thread wrote:
+The issue thread also mentioned:
 
 > When using, designing and documenting APIs for things [...] it’s good when one
 > function returns a value or mutates things. But not both at the same time.
 
 Not handling that also means reducing code complexity. Imagine a DOM node
 already has an attribute `disabled: true`, and you pass it to the reviver with
-`v(DOMNode, { disabled: false })`. What happens? Should it diff and then call
-`removeAttribute('disabled')`? Kinda needs to. Same goes for events and
+`v(DOMNode, { disabled: false })`. What happens? The reviver must diff the DOM
+node and know to call `removeAttribute('disabled')`. Same applies to events and
 children, not just attributes. Mutation is hard - just look at the diff
 algorithms in virtual DOMs. It's a solved problem, but not this reviver's
 problem.
@@ -326,9 +330,10 @@ problem.
 You don't need an array for children. In fact, an interesting minimization for
 code would be removing them all. Arrays make sense for `.map()`, or functions
 and components that return an array of children (yes,you _can_ return an array
-of children unlike React/Preact). You might be inclined to never use them
-directly to keep cleaner code, but most editors and linters will not understand
-the identation without an array,so you mileage may vary.
+of children unlike React/Preact where you need a fragment). You might be
+inclined to never use them directly to keep cleaner code, but most editors and
+linters will not understand the identation without an array,so you mileage may
+vary.
 
 ```js
 m('#ok', { ... }, anArray.map(item => m('li', item)))
