@@ -17,15 +17,18 @@ const parseSelector = selector => {
   let match
   while (match = selectorRegex.exec(selector)) {
     const [type, value] = match
-    if (type === '' && value !== '')
+    if (type === '' && value !== '') {
       tag = value
       continue
-    if (type === '#')
+    }
+    if (type === '#') {
       attrs.id = value
       continue
-    if (type === '.')
+    }
+    if (type === '.') {
       classes.push(value)
       continue
+    }
     if (match[3][0] === '[') {
       let attrValue = match[6]
       if (attrValue)
@@ -61,11 +64,13 @@ const v = selector => {
   // read as: if last index of array is the start children index
   if (arguments.length - 1 === start) {
     children = arguments[start]
-    if (!Array.isArray(children)) children = [children]
+    if (!Array.isArray(children))
+      children = [children]
   } else {
     // MDN: `arguments.slice()` has optimization issues
     children = []
-    while (start < arguments.length) children.push(arguments[start++])
+    while (start < arguments.length)
+      children.push(arguments[start++])
   }
   // component is a function, let it do it's own rendering
   if (type !== 'string') return selector({ attrs, children })
