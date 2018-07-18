@@ -17,17 +17,30 @@ const parseSelector = selector => {
   let match
   while (match = selectorRegex.exec(selector)) {
     const [type, value] = match
-    if (type === '' && value !== '') tag = value
-    else if (type === '#') attrs.id = value
-    else if (type === '.') classes.push(value)
-    else if (match[3][0] === '[') {
+    if (type === '' && value !== '')
+      tag = value
+      continue
+    if (type === '#')
+      attrs.id = value
+      continue
+    if (type === '.')
+      classes.push(value)
+      continue
+    if (match[3][0] === '[') {
       let attrValue = match[6]
-      if (attrValue) attrValue = attrValue.replace(/\\(["'])/g, "$1").replace(/\\\\/g, "\\")
-      if (match[4] === 'class') classes.push(attrValue)
-      else attrs[match[4]] = attrValue === '' ? attrValue : attrValue || true
+      if (attrValue)
+        attrValue = attrValue.replace(/\\(["'])/g, "$1").replace(/\\\\/g, "\\")
+      if (match[4] === 'class')
+        classes.push(attrValue)
+      else
+        attrs[match[4]] = attrValue === ''
+          ? attrValue
+          : attrValue || true
     }
   }
-  if (classes.length > 0) attrs.className = classes.join(' ')
+  if (classes.length > 0)
+    attrs.className = classes.join(' ')
+
   return selectorCache[selector] = { tag, attrs }
 }
 
@@ -63,7 +76,7 @@ const v = selector => {
 
   const element = document.createElement(tag)
 
-  // overwrite or stack attributes in the selector with those in attrs
+  // overwrite (or stack) attributes in the selector with those in attrs
   for (const attributes of [selectorAttrs, attrs]) {
     for (const [name, value] in Object.entries(attributes)) {
       if (name === 'class' || name === 'className') {
