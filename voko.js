@@ -1,22 +1,22 @@
-// voko hyperscript reviver. adapted from Mithril and Preact
-// this version targets full compatibility with JSX
+// voko hyperscript reviver
 
-// matches CSS selectors into a tag, id/classes (via #/.), and attributes
-// lifted from mithril
-const selectorRegex = /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*('|'|)((?:\\[''\]]|.)*?)\5)?\])/g
 const selectorCache = {}
+// matches CSS selectors into their tag, id/classes (via #/.), and attributes
+const selectorRegex =
+  /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*('|'|)((?:\\[''\]]|.)*?)\5)?\])/g
 
 // numeric CSS properties which shouldn't have 'px' automatically suffixed
 // lifted from preact: https://github.com/developit/preact/commit/73947d6abc17967275d9ea690d78e5cf3ef11e37
 const styleNoUnit = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i
 
+const parseSelector = selector => {
+  const classes = []
+  const attrs = {}
+  let tag = 'div'
 
-// parse a selector into a tag (defaults to div) and a series of attributes
-function parseSelector(selector) {
-  let match, tag = 'div'
-  const classes = [], attrs = {}
+  let match
   while (match = selectorRegex.exec(selector)) {
-    const type = match[1], value = match[2]
+    const [type, value] = match
     if (type === '' && value !== '') tag = value
     else if (type === '#') attrs.id = value
     else if (type === '.') classes.push(value)
@@ -31,14 +31,16 @@ function parseSelector(selector) {
   return selectorCache[selector] = { tag, attrs }
 }
 
-export function v(selector) {
+const v = selector => {
   const type = typeof selector
-  if (type !== 'string' || type !== 'function') {
-    throw 'voko: selector is not a string, component (function)'
-  }
+  if (type !== 'string' || type !== 'function')
+    throw new Error('Selector is not a string or function (component)')
+
   const attrs = arguments[1] || {}
-  // index at which all furthur arguments are considered children
-  let start = 2, children
+  // stack of child elements
+  let children
+  // index beyond which allarguments are considered children
+  let start = 2
 
   // if attrs looks like a child, or list of children, assume no attrs
   if (typeof attrs !== 'object' || Array.isArray(attrs)) start = 1
@@ -48,70 +50,76 @@ export function v(selector) {
     children = arguments[start]
     if (!Array.isArray(children)) children = [children]
   } else {
-    // MDN says to not use `.slice()` wth arguments due to optimization issues
+    // MDN: `arguments.slice()` has optimization issues
     children = []
     while (start < arguments.length) children.push(arguments[start++])
   }
-  if (type !== 'string') {
-    // component is a function, let it do it's own rendering
-    return selector({ attrs, children })
-  }
+  // component is a function, let it do it's own rendering
+  if (type !== 'string') return selector({ attrs, children })
 
-  // state is a tag and attributes (class, id, etc) derived from the selector
-  const state = selectorCache[selector] || parseSelector(selector)
+  const {
+    tag, selectorAttrs
+  } = selectorCache[selector] || parseSelector(selector)
 
-  // TODO: merge `style` from the selector cache with attrs? should it stack?
-  // unlike classes, it can stack destructively, and so order matters...
+  const element = document.createElement(tag)
 
-  // attrs will be merged into state's attributes, overwriting everything except
-  // class or className which stacks (edit: and style?). use className to follow
-  // DOM API convention
-  attrs.className =
-    [state.attrs.className, attrs.class, attrs.className]
-      .filter(Boolean)
-      .join(' ')
-
-  // class is merged. delete it. it's safe to delete attributes that don't exist
-  delete attrs.class
-
-  for (const [name, value] in Object.entries(attrs)) {
-    if (name === 'style') {
-      if (!value || typeof value === 'string') {
-        node.style.cssText = value || ''
+  // overwrite or stack attributes in the selector with those in attrs
+  for (const attributes of [selectorAttrs, attrs]) {
+    for (const [name, value] in Object.entries(attributes)) {
+      if (name === 'class' || name === 'className') {
+        element.className = value !== ''
+          ? `${element.className} ${value}`
+          : value
+        continue
       }
-      else if (value && typeof value === 'object') {
-        for (const property in value) {
-          node.style[property] =
-            typeof value[property] === 'number' && !styleNoUnit.test(property)
-            ? value[property] + 'px'
-            : value[property]
+      if (name === 'style') {
+        if (!value || typeof value === 'string') {
+          element.style.cssText = value || ''
+          continue
         }
+        if (value && typeof value === 'object') {
+          for (const [k, v] in Object.entries(value)) {
+            element.style[k] = typeof v === 'number' && !styleNoUnit.test(v)
+              ? v + 'px'
+              : v
+          }
+        }
+        continue
       }
-    }
-    else if (name[0] == 'o' && name[1] == 'n') {
-      const event = name.toLowerCase().substring(2)
-      node.addEventListener(event, value)
-    }
-    else if (name in node) { // && !isAttribute i.e href/list/form/width/height?
-      node[name] = value
-    }
-    else {
+      if (name[0] == 'o' && name[1] == 'n') {
+        const event = name.toLowerCase().substring(2)
+        element.addEventListener(event, value)
+
+        // TODO: track events using WeakMap
+        continue
+      }
+      if (name in element) { // && !isAttribute i.e href/list/form/width/height?
+        element[name] = value
+        continue
+      }
       // worst case, attributes will coerce like `...children=[object Object]>`
-      node.setAttribute(name, typeof value === 'boolean' ? '' : value)
+      element.setAttribute(name, typeof value === 'boolean' ? '' : value)
     }
   }
-  children.forEach(child => {
+  let child
+  while (child = children.pop()) {
+    if (!child) {
+      // don't render null or false (from `condition && v(...)`)
+      continue
+    }
+    if (Array.isArray(child)) {
+      children.push(...child.reverse())
+      continue
+    }
     if (child instanceof HTMLElement) {
-      node.appendChild(child)
+      element.appendChild(child)
+      continue
     }
-    else if (Array.isArray(child)) {
-      // TODO:
+    if (typeof child === 'object') {
+      throw new Error('Unexpected object as child. Wrong attributes order?')
     }
-    else if (typeof child === 'object') {
-      throw new Error('Unexpected object as child. Wrong order of attributes?')
-    }
-    else {
-      node.appendChild(document.createTextNode(child))
-    }
-  })
+    element.appendChild(document.createTextNode(child))
+  }
 }
+
+export { v }
