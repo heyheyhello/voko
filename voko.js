@@ -1,5 +1,7 @@
 // voko hyperscript reviver
 
+const eventMap = new WeakMap()
+
 const selectorCache = {}
 // matches CSS selectors into their tag, id/classes (via #/.), and attributes
 const selectorRegex =
@@ -106,7 +108,9 @@ const v = selector => {
         const event = name.toLowerCase().substring(2)
         element.addEventListener(event, value)
 
-        // TODO: track events using WeakMap
+        const events = eventMap.get(element) || {}
+        events[event] = value
+        eventMap.set(element, events)
         continue
       }
       if (name in element) { // && !isAttribute i.e href/list/form/width/height?
