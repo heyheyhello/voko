@@ -17,20 +17,18 @@ console.log(simpleTest.outerHTML)
 const header = v('header', { style: 'background:"#fff"' })
 const existingNode = document.createElement('p')
 
-const ButtonComponent = ({ attrs, children }) => {
-  // ES7: https://github.com/tc39/proposal-object-rest-spread
-  const { size, ...other } = attrs
-  return v('a.btn', { style: { fontSize: size }, ...other }, children)
-}
+// ES7: https://github.com/tc39/proposal-object-rest-spread
+const ButtonComponent = ({ attrs: { size, ...other }, children }) =>
+  v('a.btn', { style: { fontSize: size }, ...other }, children)
 
 const tags = {
-  Home: [
+  Pictures: [
     'Some content',
     'Another post',
   ],
-  Work: [
+  Videos: [
+    'Hello! <code>Escaped HTML</code>',
     123,
-    'Hey!<CODE>Escape</CODE>',
   ],
 }
 const complexTest =
