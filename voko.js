@@ -1,7 +1,6 @@
 // voko hyperscript reviver
 
 const eventMap = new WeakMap()
-
 const selectorCache = {}
 // matches CSS selectors into their tag, id/classes (via #/.), and attributes
 const selectorRegex =
@@ -72,9 +71,8 @@ const v = (selector, ...attrChildren) => {
   } = selectorCache[selector] || parseSelector(selector)
 
   const element = document.createElement(tag)
-
-  // overwrite (or stack) attributes in the selector with those in attrs
   const classes = []
+  // overwrite (or stack) attributes in the selector with those in attrs
   for (const attributes of [selectorAttrs, attrs]) {
     for (const [name, value] of Object.entries(attributes)) {
       if (name === 'class' || name === 'className') {
@@ -135,5 +133,7 @@ const v = (selector, ...attrChildren) => {
   }
   return element
 }
+
+v.events = eventMap
 
 export { v }
