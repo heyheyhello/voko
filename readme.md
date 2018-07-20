@@ -1,11 +1,11 @@
 # Hyperscript revivers
 
-_Work in progress. Mostly research_
-
 Utility providing a shorthand way of producing HTML DOM trees. The parser is JSX
 compatible, but far more powerful without it by allow CSS selector syntax to
 define element tags. Useful for times when a full framework is too heavy, but
 using DOM APIs like `createElement` is too tedious.
+
+1.56kB minified and 961B gzipped (when exported via `window.v`)
 
 ---
 
@@ -13,8 +13,8 @@ This reviver was heavily influenced by Mithril, but also inspired by other
 hyperscript projects such as the original _hyperscript_ project, JSX, vhtml, the
 reviver's in Preact and other React-like projects, and Val (from Skate.js)
 
-The reviver will not use a virtual DOM, or handle state or updates. It only
-simplifies the DOM API allowing for HTML components without a framework.
+There's no virtual DOM or handling of state or updates. It only simplifies the
+DOM API allowing for HTML components without a framework.
 
 Turns:
 
@@ -43,7 +43,7 @@ v('.header', { onClick: () => {} },
 )
 ```
 
-The reviver also supports components (as functions) andtranspiled JSX code.
+The reviver also supports components (as functions) and transpiled JSX code.
 See other examples in this document.
 
 ## Rational
