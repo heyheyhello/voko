@@ -1,4 +1,4 @@
-# Notes
+# Scope
 
 This document decides what features, syntax, and cases to support for voko.
 It goes over how related libraries and frameworks are written, and how their
