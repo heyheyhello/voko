@@ -14,7 +14,7 @@ There's no virtual DOM, handling of state or updates, or mutating existing DOM
 nodes. It only simplifies the DOM API for creating elements, and allows for HTML
 components (as functions).
 
-Works server side for HTML generation as well.
+Also works server side with JSDOM to generate HTML.
 
 Turns:
 ```js
@@ -73,7 +73,7 @@ document.body.appendChild(
       v('article', [
         v('h2', { style: { fontSize: 18 } }, `#${tag}`),
         v('small', `Post count: ${posts.length}`),
-        posts.forEach(post => v('p', post)),
+        posts.map(post => v('p', post)),
       ])),
     v(ButtonComponent, { size: 50, class: 'center' }, 'TapTap', 'Tap'),
     v('section.primary', [

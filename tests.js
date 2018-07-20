@@ -43,7 +43,7 @@ const complexTest =
       v('article', [
         v('h2', { style: { fontSize: 18 } }, `#${tag}`),
         v('small', `Post count: ${posts.length}`),
-        posts.forEach(post => v('p', post)),
+        posts.map(post => v('p', post)),
       ])),
     v(ButtonComponent, { size: 50, class: 'center' }, 'TapTap'),
     v('section.primary', [
