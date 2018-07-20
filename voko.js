@@ -49,35 +49,19 @@ const parseSelector = selector => {
   return selectorCache[selector] = { tag, selectorAttrs }
 }
 
-const v = (selector, ...args) => {
+const v = (selector, ...attrChildren) => {
   const type = typeof selector
   if (type !== 'string' && type !== 'function')
     throw new Error('Selector is not a string or function (component)')
 
-  // args[0] may be an object of attributes. all other args are children
-  let attrs = args[0] || {}
-  // if attrs looks like a child, or list of children, assume no attrs
-  let start = 1
-  let end = args.length - 1
-  if (typeof attrs !== 'object' || Array.isArray(attrs)) {
-    start = 0
-    attrs = {}
-  }
+  // attrChildren may start with attributes, or be entirely children
+  const maybeAttr = attrChildren[0]
+  const attrs = (typeof maybeAttr === 'object' && !Array.isArray(maybeAttr))
+    ? attrChildren.shift()
+    : {}
 
-  // stack of child elements
-  let children
-  if (start === end) {
-    children = args[start]
-    if (!Array.isArray(children))
-      children = [children]
-  } else {
-    // add to the stack (backwards)
-    children = []
-    // console.log(start, end)
-    while (start <= end)
-      children.push(args[start++])
-  }
-  children.reverse()
+  // attrChildren is now entirely children. create a stack
+  const children = attrChildren.reverse()
 
   // component is a function, let it do it's own rendering
   if (type !== 'string')
