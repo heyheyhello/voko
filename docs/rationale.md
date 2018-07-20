@@ -1,4 +1,4 @@
-## Rationale
+# Rationale
 
 At work I introduced my team to React (though I now use Preact) and the idea of
 component oriented design that to write HTML directly in JS. We've experienced
