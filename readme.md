@@ -90,3 +90,6 @@ document.body.appendChild(
 
 Read _docs/rationale.md_ on what makes a reviver (and components more generally)
 useful, and _docs/scope.md_ for the feature set and design decisions for voko.
+
+__Note__: This is a purely ESM script, so it won't support `require()`. Use the
+minified version to bind to `window` in the browser, and ESM for your bundler.
