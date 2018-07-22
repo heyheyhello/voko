@@ -64,7 +64,7 @@ const v = (selector, ...attrChildren) => {
 
   // component is a function, let it do it's own rendering
   if (type !== 'string')
-    return selector({ attrs, children })
+    return selector(attrs, children)
 
   const {
     tag, selectorAttrs

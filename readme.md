@@ -4,7 +4,7 @@ Hyperscript reviver for the DOM that uses CSS selector syntax to shorthand
 element tags and attribute. JSX compatible. Useful for times when a full
 framework is too heavy, but using DOM APIs like `createElement` is too tedious.
 
-1.56kB minified and 961B gzipped (when exported via `window.v`)
+1.54kB minified and 909B gzipped (when exported via `window.v`)
 
 Heavily influenced by Mithril, but also inspired by other hyperscript projects
 such as the original _hyperscript_ project, Preact and other React-like
@@ -47,7 +47,7 @@ const header = v('header', { style: 'background:"#fff"' })
 const existingNode = document.createElement('p')
 
 // ES7: https://github.com/tc39/proposal-object-rest-spread
-const ButtonComponent = ({ attrs: { size, ...other }, children }) =>
+const ButtonComponent = ({ size, ...other }, children) =>
   v('a.btn', { style: { fontSize: size }, ...other }, children)
 
 const tags = {
