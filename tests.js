@@ -17,8 +17,17 @@ console.log(simpleTest.outerHTML)
 const header = v('header', { style: 'background:"#fff"' })
 const existingNode = document.createElement('p')
 
+existingNode.appendChild(
+  v.fragment([
+    v('', 'Hello'),
+    v('h1')
+  ]))
+
+existingNode.appendChild(
+  v.fragment(v('.one', 1), v('.two', 2)))
+
 // ES7: https://github.com/tc39/proposal-object-rest-spread
-const ButtonComponent = ({ attrs: { size, ...other }, children }) =>
+const ButtonComponent = ({ size, ...other }, children) =>
   v('a.btn', { style: { fontSize: size }, ...other }, children)
 
 const tags = {
@@ -45,7 +54,7 @@ const complexTest =
         v('small', `Post count: ${posts.length}`),
         posts.map(post => v('p', post)),
       ])),
-    v(ButtonComponent, { size: 50, class: 'center' }, 'TapTap'),
+    v(ButtonComponent, { size: 50, class: 'center' }, 'Child 1', 2, 3, 4),
     v('section.primary', [
       'Text',
       v('p', 'Hello'),
