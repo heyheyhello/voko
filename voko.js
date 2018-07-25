@@ -14,7 +14,6 @@ const parseSelector = selector => {
   const classes = []
   const selectorAttrs = {}
   let tag = 'div'
-
   let match
   while (match = selectorRegex.exec(selector)) {
     const [all, type, value] = match
@@ -48,6 +47,30 @@ const parseSelector = selector => {
   return selectorCache[selector] = { tag, selectorAttrs }
 }
 
+const withChildren = (parent, children) => {
+  let child
+  const stack = children.reverse()
+  while (child = stack.pop()) {
+    if (!child) {
+      // don't render null or false (from `condition && v(...)`)
+      continue
+    }
+    if (Array.isArray(child)) {
+      stack.push(...child.reverse())
+      continue
+    }
+    if (child instanceof HTMLElement) {
+      parent.appendChild(child)
+      continue
+    }
+    if (typeof child === 'object') {
+      throw new Error('Unexpected object as child')
+    }
+    parent.appendChild(document.createTextNode(child))
+  }
+  return parent
+}
+
 const v = (selector, ...attrChildren) => {
   const type = typeof selector
   if (type !== 'string' && type !== 'function')
@@ -59,8 +82,8 @@ const v = (selector, ...attrChildren) => {
     ? attrChildren.shift()
     : {}
 
-  // attrChildren is now entirely children. create a stack
-  const children = attrChildren.reverse()
+  // attrChildren is now entirely children
+  const children = attrChildren
 
   // component is a function, let it do it's own rendering
   if (type !== 'string')
@@ -112,27 +135,11 @@ const v = (selector, ...attrChildren) => {
   if (classes.length)
     element.className = classes.join(' ')
 
-  let child
-  while (child = children.pop()) {
-    if (!child) {
-      // don't render null or false (from `condition && v(...)`)
-      continue
-    }
-    if (Array.isArray(child)) {
-      children.push(...child.reverse())
-      continue
-    }
-    if (child instanceof HTMLElement) {
-      element.appendChild(child)
-      continue
-    }
-    if (typeof child === 'object') {
-      throw new Error('Unexpected object as child. Wrong attributes order?')
-    }
-    element.appendChild(document.createTextNode(child))
-  }
-  return element
+  return withChildren(element, children)
 }
+
+v.fragment = (...children) =>
+  withChildren(document.createDocumentFragment(), children)
 
 v.events = eventMap
 
