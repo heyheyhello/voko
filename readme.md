@@ -1,14 +1,14 @@
 # voko
 
 Hyperscript reviver for the DOM that uses CSS selector syntax to shorthand
-element tags and attribute. JSX compatible. Useful for times when a full
-framework is too heavy, but using DOM APIs like `createElement` is too tedious.
+element creation. JSX compatible. For projects where writing raw DOM APIs like
+`createElement` is too tedious, but a full framework is too heavy.
 
-1.56kB minified and 961B gzipped (when exported via `window.v`)
+1.56kB minified and 961B gzipped (when exported via `window.v`). Large projects
+will reduce their bundle size after replacing verbose DOM APIs with voko.
 
-Heavily influenced by Mithril, but also inspired by other hyperscript projects
-such as the original _hyperscript_ project, Preact and other React-like
-projects, and Val (Skate.js).
+Heavily based on Mithril, but also inspired by the hyperscript project, Preact
+and other React-like libraries, and Val.
 
 There's no virtual DOM, handling of state or updates, or mutating existing DOM
 nodes. It only simplifies the DOM API for creating elements, and allows for HTML
