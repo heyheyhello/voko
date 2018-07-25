@@ -329,7 +329,7 @@ problem.
 
 You don't need an array for children. In fact, an interesting minimization for
 code would be removing them all. Arrays make sense for `.map()`, or functions
-and components that return an array of children (yes,you _can_ return an array
+and components that return an array of children (yes, you _can_ return an array
 of children unlike React/Preact where you need a fragment). You might be
 inclined to never use them directly to keep cleaner code, but most editors and
 linters will not understand the identation without an array,so you mileage may
@@ -378,6 +378,11 @@ replacing them entirely. No one wants to have unnecessary tags. Example:
     ],
 )]
 ```
+
+The one time a fragment is still needed is for appending to existing body nodes.
+Eventually everything must be mounted, and if voko returns an array of children
+to an unsuspecting `node.appendChild(v(...))` then it won't work. To get around
+this without additional markup, voko supports `v.fragment(...children)`.
 
 ## Component props and JSX compatibility
 
@@ -511,5 +516,15 @@ v('#main', {
   // needlessly nested but OK. a document fragment will _not_ be used
   [ 'Text', DOMNode ],
   [[[ 'Text', DOMNode ]]],
+
+  // a document fragment
+  v.fragment(1, 2, 3)
 ])
+
+// append without multiple calls to `appendChild`:
+document.body.appendChild(
+  v.fragment([
+    v('nav'),
+    v('main'),
+  ])
 ```

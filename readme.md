@@ -11,8 +11,8 @@ such as the original _hyperscript_ project, Preact and other React-like
 projects, and Val (Skate.js).
 
 There's no virtual DOM, handling of state or updates, or mutating existing DOM
-nodes. It only simplifies the DOM API for creating elements, and allows for HTML
-components (as functions).
+nodes. It only simplifies DOM APIs for creating elements and fragments, and
+allows for HTML components (as functions).
 
 Also works server side with JSDOM to generate HTML.
 
@@ -86,6 +86,12 @@ document.body.appendChild(
     ]),
     existingNode,
   ]))
+
+// append without extra tags or calls to `appendChild`:
+document
+  .querySelector('content #card')
+  .appendChild(
+    v.fragment(v('nav'), v('main'))
 ```
 
 Read _docs/rationale.md_ on what makes a reviver (and components more generally)
