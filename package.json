@@ -3,6 +3,9 @@
   "version": "2.1.0",
   "description": "Hyperscript reviver for the DOM using CSS selector syntax",
   "main": "voko.js",
+  "scripts": {
+    "size": "cat voko.min.js | gzip -9 | wc -c"
+  },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@gitlab.com/nthm/voko.git"

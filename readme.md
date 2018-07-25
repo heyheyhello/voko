@@ -4,7 +4,7 @@ Hyperscript reviver for the DOM that uses CSS selector syntax to shorthand
 element tags and attribute. JSX compatible. Useful for times when a full
 framework is too heavy, but using DOM APIs like `createElement` is too tedious.
 
-1.54kB minified and 909B gzipped (when exported via `window.v`)
+1.63kB minified and 939B gzipped (when exported via `window.v`)
 
 Heavily influenced by Mithril, but also inspired by other hyperscript projects
 such as the original _hyperscript_ project, Preact and other React-like
