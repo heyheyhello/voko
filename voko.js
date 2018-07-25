@@ -59,7 +59,7 @@ const withChildren = (parent, children) => {
       stack.push(...child.reverse())
       continue
     }
-    if (child instanceof HTMLElement) {
+    if (child instanceof Node) {
       parent.appendChild(child)
       continue
     }
