@@ -4,7 +4,9 @@
   "description": "Hyperscript reviver for the DOM using CSS selector syntax",
   "main": "voko.js",
   "scripts": {
-    "size": "cat voko.min.js | gzip -9 | wc -c"
+    "minify": "node --experimental-modules minify.mjs",
+    "size": "cat voko.min.js | gzip -9 | wc -c",
+    "build": "npm run minify && npm run size"
   },
   "repository": {
     "type": "git",
@@ -13,10 +15,16 @@
   "keywords": [
     "hyperscript"
   ],
+  "engines": {
+    "node": ">=8.5.0"
+  },
   "author": "Grant Hames-Morgan",
   "license": "MIT",
   "bugs": {
     "url": "https://gitlab.com/nthm/voko/issues"
   },
-  "homepage": "https://gitlab.com/nthm/voko#README"
+  "homepage": "https://gitlab.com/nthm/voko#README",
+  "dependencies": {
+    "uglify-es": "^3.3.9"
+  }
 }

@@ -1,2 +1,5 @@
+node_modules/
 docs/
 tests.js
+minify.mjs
+minify-cache.json
