@@ -61,6 +61,9 @@ const tags = {
   ],
 }
 
+// track references to DOM nodes using `ref:`
+const live = {}
+
 document.body.appendChild(
   v('#main', [
     v('nav.large', [
@@ -79,13 +82,20 @@ document.body.appendChild(
     v('section.primary', [
       'Text',
       v('p', 'Hello'),
-      v('small.bold[style=fontStyle:italic]', {
+      v('small.btn[style=fontStyle:italic]', {
+        ref: e => live.Button = e,
         className: 'blue',
         onClick() {},
       }, 'Tap me'),
     ]),
     existingNode,
   ]))
+
+// expect `{ Button: HTMLElement {} }`
+console.log(live)
+
+// expect `{ click: [λ: onClick] }`
+console.log(v.events.get(live.Button))
 
 // append without extra tags or calls to `appendChild`:
 document
