@@ -24,7 +24,8 @@
     "url": "https://gitlab.com/nthm/voko/issues"
   },
   "homepage": "https://gitlab.com/nthm/voko#README",
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "uglify-es": "^3.3.9"
   }
 }
