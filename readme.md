@@ -4,7 +4,7 @@ Hyperscript reviver for the DOM that uses CSS selector syntax to shorthand
 element creation. JSX compatible. For projects where writing raw DOM APIs like
 `createElement` is too tedious, but a full framework is too heavy.
 
-1.63kB minified and 933B gzipped (when exported via `window.v`). Large projects
+1.62kB minified and 939B gzipped when exported as `window.v`. Large projects
 will reduce their bundle size after replacing verbose DOM APIs with voko.
 
 Heavily based on Mithril, but also inspired by the hyperscript project, Preact

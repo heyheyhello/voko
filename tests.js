@@ -1,4 +1,4 @@
-// running with Quokka and JSDOM plugin
+// running with Quokka and JSDOM plugin. paste voko.min.js
 
 const simpleTest =
   v('header.ok[href=link][class=yes]', {
@@ -12,6 +12,7 @@ const simpleTest =
     [1, 2, 3].map(x => v('li', x))
   ])
 
+// expect order to be mainted for children
 console.log(simpleTest.outerHTML)
 
 const header = v('header', { style: 'background:"#fff"' })
@@ -40,6 +41,10 @@ const tags = {
     123,
   ],
 }
+
+// store references to live DOM nodes
+const live = {}
+
 const complexTest =
   v('#main', [
     v('nav.large', [
@@ -54,16 +59,29 @@ const complexTest =
         v('small', `Post count: ${posts.length}`),
         posts.map(post => v('p', post)),
       ])),
-    v(ButtonComponent, { size: 50, class: 'center' }, 'Child 1', 2, 3, 4),
+    v(ButtonComponent, {
+      ref: e => live.Button = e,
+      size: 50,
+      class: 'center'
+    }, 'Child 1', 2, 3, 4),
     v('section.primary', [
       'Text',
       v('p', 'Hello'),
       v('small.bold[style=fontStyle:italic]', {
+        ref: e => live.Tap = e,
         className: 'blue',
-        onClick() {},
+        onClick() {
+          console.log('onClick')
+        },
       }, 'Tap me'),
     ]),
     existingNode,
   ])
 
 console.log(complexTest.outerHTML)
+
+// expect `{ Button: HTMLAnchorElement {}, Tap: HTMLElement {} }`
+console.log(live)
+
+// expect `{ click: [λ: onClick] }`
+console.log(v.events.get(live.Tap))

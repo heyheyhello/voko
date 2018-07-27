@@ -98,6 +98,11 @@ const v = (selector, ...attrChildren) => {
   // overwrite (or stack) attributes in the selector with those in attrs
   for (const attributes of [selectorAttrs, attrs]) {
     for (const [name, value] of Object.entries(attributes)) {
+      // assume it's a function, pass the reference to the node
+      if (name === 'ref') {
+        value(element)
+        continue
+      }
       if (name === 'class' || name === 'className') {
         classes.push(value)
         continue
