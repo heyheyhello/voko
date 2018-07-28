@@ -48,9 +48,9 @@ const parseSelector = selector => {
 }
 
 const withChildren = (parent, children) => {
-  let child
   const stack = children.reverse()
-  while (child = stack.pop()) {
+  while (stack.length) {
+    const child = stack.pop()
     if (!child) {
       // don't render null or false (from `condition && v(...)`)
       continue

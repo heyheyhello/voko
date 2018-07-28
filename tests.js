@@ -42,14 +42,17 @@ const tags = {
   ],
 }
 
+const condition = false
+
 // store references to live DOM nodes
 const live = {}
 
 const complexTest =
   v('#main', [
-    v('nav.large', [
-      v('a.link[href=/][disabled]', 'Home'),
-    ]),
+    condition &&
+      v('nav.large', [
+        v('a.link[href=/][disabled]', 'SHOULD NOT RENDER'),
+      ]),
     header,
     v('h1', 'Tags'),
     v('hr'),
