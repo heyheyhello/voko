@@ -1,5 +1,7 @@
 # voko
 
+_Done. This project is maintained, there's no more development needed._
+
 Hyperscript reviver for the DOM that uses CSS selector syntax to shorthand
 element creation. JSX compatible. For projects where writing raw DOM APIs like
 `createElement` is too tedious, but a full framework is too heavy.
