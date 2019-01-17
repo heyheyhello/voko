@@ -15,11 +15,11 @@ const reservedDOMProps = [
 ]
 
 const options = {
-  ecma: 8,
+  ecma: 5,
   mangle: {
     reserved: ['v'],
     properties: {
-      reserved: ['fragment', 'events', ...reservedDOMProps]
+      reserved: ['fragment', 'events', 'ns', 'svg', ...reservedDOMProps]
     },
   },
   toplevel: true,
@@ -36,6 +36,7 @@ const reduced = code
   .replace(/ new Error\("(.+?)"\)/g, '"$1"')
   .replace('Unexpected o', 'O')
   .replace(' (component)', '')
+  .replace(/const/g, 'let')
   .slice(0, -("export{v};".length))
 
 fs.writeFileSync('voko.min.js', `window.v=(()=>{${reduced}return v})()\n`)
