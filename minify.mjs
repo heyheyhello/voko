@@ -34,7 +34,7 @@ if (error) throw error
 
 const reduced = code
   .replace(/ new Error\("(.+?)"\)/g, '"$1"')
-  .replace('Unexpected o', 'O')
+  .replace('Unexpected object as child', 'Child is object')
   .replace(' (component)', '')
   .replace(/const/g, 'let')
   .slice(0, -("export{v};".length))
