@@ -2,18 +2,23 @@
 
 const eventMap = new WeakMap()
 const selectorCache = {}
-// matches CSS selectors into their tag, id/classes (via #/.), and attributes
-const selectorRegex =
-  /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*('|'|)((?:\\[''\]]|.)*?)\5)?\])/g
+// decompose selectors such as input#id.main[disabled] and rect:svg[fill=#eee]
+const selectorRegex = /(?:(^|#|\.|:)([^#\.\[\]:]+))|(\[(.+?)(?:\s*=\s*("|'|)((?:\\["'\]]|.)*?)\5)?\])/g
 
 // numeric CSS properties which shouldn't have 'px' automatically suffixed
 // lifted from preact: https://github.com/developit/preact/commit/73947d6abc17967275d9ea690d78e5cf3ef11e37
 const styleNoUnit = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i
 
+const namespaces = {
+  // others can be added at runtime as needed via `v.ns[...] = 'http://...'`
+  svg: 'http://www.w3.org/2000/svg',
+}
+
 const parseSelector = selector => {
   const classes = []
   const selectorAttrs = {}
   let tag = 'div'
+  let namespace
   let match
   while (match = selectorRegex.exec(selector)) {
     const [all, type, value] = match
@@ -27,6 +32,10 @@ const parseSelector = selector => {
     }
     if (type === '.') {
       classes.push(value)
+      continue
+    }
+    if (type === ':') {
+      namespace = value
       continue
     }
     if (match[3][0] === '[') {
@@ -44,7 +53,7 @@ const parseSelector = selector => {
   if (classes.length > 0)
     selectorAttrs.className = classes.join(' ')
 
-  return selectorCache[selector] = { tag, selectorAttrs }
+  return selectorCache[selector] = { ns: namespace, tag, selectorAttrs }
 }
 
 const withChildren = (parent, children) => {
@@ -90,10 +99,12 @@ const v = (selector, ...attrChildren) => {
     return selector(attrs, children)
 
   const {
-    tag, selectorAttrs
+    ns, tag, selectorAttrs
   } = selectorCache[selector] || parseSelector(selector)
 
-  const element = document.createElement(tag)
+  const element = ns
+    ? document.createElementNS(namespaces[ns], tag)
+    : document.createElement(tag)
   const classes = []
   // overwrite (or stack) attributes in the selector with those in attrs
   for (const attributes of [selectorAttrs, attrs]) {
@@ -147,5 +158,7 @@ v.fragment = (...children) =>
   withChildren(document.createDocumentFragment(), children)
 
 v.events = eventMap
+
+v.ns = namespaces
 
 export { v }

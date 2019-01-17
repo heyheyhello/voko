@@ -1,5 +1,3 @@
-// running with Quokka and JSDOM plugin. paste voko.min.js
-
 const simpleTest =
   v('header.ok[href=link][class=yes]', {
     class: 'blue',
@@ -88,3 +86,63 @@ console.log(live)
 
 // expect `{ click: [λ: onClick] }`
 console.log(v.events.get(live.Tap))
+
+// testing SVGs; similar to:
+// https://gitlab.com/nthm/snakoa/blob/e473ed194f2eacc2ee4868ef9c4a66f7925cf97a/grid.js
+
+function createSVGBaseGrid({
+  squareSize = 50, // In pixels
+  width = 10,
+  height = 10,
+} = {}) {
+  const size = squareSize;
+  const pxWidth = width * size;
+  const pxHeight = height * size;
+  // can't [viewBox=] since the array will be coerced to a string
+  // can't [width=][height=]
+  const svg = v(`svg:svg#grid`, {
+    ref: e => {
+      e.setAttribute('width', pxWidth)
+      e.setAttribute('height', pxHeight)
+      e.setAttribute('viewBox', [0, 0, `${pxWidth} ${pxHeight}`])
+    },
+  })
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      // can't [transform=] since the array will be coerced to a string
+      const group = v('g:svg', {
+        ref: e => {
+          e.setAttribute('transform', [`translate(${x * size},${y * size})`])
+        },
+      }, [
+        // can't [width=][height=]
+        v('rect:svg[fill=#fff][stroke-width=1][stroke=#ccc]', {
+          ref: e => {
+            e.setAttribute('width', size)
+            e.setAttribute('height', size)
+          },
+          onMouseOver: event => {
+            event.target.setAttribute('fill', '#ddd')
+          },
+          onMouseOut: event => {
+            event.target.setAttribute('fill', '#fff')
+          },
+        }),
+        // can't [x=][y=]
+        v('text:svg', {
+          ref: e => {
+            e.setAttribute('x', 5)
+            e.setAttribute('y', 15)
+          },
+          // not really working either... it's in the {} but needs setAttribute
+          fontSize: 10,
+          fontFamily: 'monospace',
+        }, `(${x},${y})`)
+      ])
+      svg.appendChild(group)
+    }
+  }
+  return svg
+}
+
+console.log(createSVGBaseGrid())
