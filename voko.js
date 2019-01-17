@@ -1,5 +1,3 @@
-// voko hyperscript reviver
-
 const eventMap = new WeakMap()
 const selectorCache = {}
 // decompose selectors such as input#id.main[disabled] and rect:svg[fill=#eee]
@@ -83,7 +81,7 @@ const withChildren = (parent, children) => {
 const v = (selector, ...attrChildren) => {
   const type = typeof selector
   if (type !== 'string' && type !== 'function')
-    throw new Error('Selector isn\'t a string or function (component)')
+    throw new Error('Selector is not string or function (component)')
 
   // attrChildren may start with attributes, or be entirely children
   const maybeAttr = attrChildren[0]
@@ -105,6 +103,7 @@ const v = (selector, ...attrChildren) => {
   const element = ns
     ? document.createElementNS(namespaces[ns], tag)
     : document.createElement(tag)
+
   const classes = []
   // overwrite (or stack) attributes in the selector with those in attrs
   for (const attributes of [selectorAttrs, attrs]) {
@@ -140,7 +139,8 @@ const v = (selector, ...attrChildren) => {
         eventMap.set(element, events)
         continue
       }
-      if (name in element) {
+      // skip anything that's namespaced since svgs _need_ setAttibute to work
+      if (!ns && name in element) {
         element[name] = value
         continue
       }
