@@ -14,8 +14,8 @@ Not supporting:
 
 - __Custom Elements__ since they require forwarding the `is:` attribute into
   `document.createElement`
-- __Namespaces__ such as SVGs and MathML. Not difficult to implement but not
-  necessary for now.
+- ~~__Namespaces__ such as SVGs and MathML. Not difficult to implement but not
+  necessary for now.~~ Implemented in v3.
 - __Modifying nodes__. Updating and removing attibutes is well beyond the scope
   of a reviver, even if it seemed fitting at first.
 - __HTML error correction__. Mithril corrects and auto-creates parent elements

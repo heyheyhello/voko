@@ -1,24 +1,24 @@
 # voko
 
-_Done. This project is maintained, there's no more development needed._
+_Done. This project is maintained but there's no more development needed_
 
-Hyperscript reviver for the DOM that uses CSS selector syntax to shorthand
-element creation. JSX compatible. For projects where writing raw DOM APIs like
-`createElement` is too tedious, but a full framework is too heavy.
+Hyperscript reviver that uses CSS selector syntax to shorthand element creation.
+Supports DOM and SVGs. JSX compatible.
 
-1.62kB minified and 941B gzipped when exported as `window.v`. Large projects
-will reduce their bundle size after replacing verbose DOM APIs with voko.
+1.72kB minified and exactly **1000B gzipped** when exported as `window.v`.
+Reduce your bundle size by replacing verbose DOM APIs with voko.
 
-Heavily based on Mithril, but also inspired by the hyperscript project, Preact
-and other React-like libraries, and Val.
+## Intro
 
-There's no virtual DOM, handling of state or updates, or mutating existing DOM
-nodes. It only simplifies DOM APIs for creating elements and fragments, and
-allows for HTML components (as functions).
+```js
+v('.header', { onClick: () => {} }, [
+  'Hello',
+  v('input[disabled][placeholder=How are you?]', { style: 'padding: 10px' }),
+])
+```
 
-Also works server side with JSDOM to generate HTML.
+Replaces:
 
-Turns:
 ```js
 const header = document.createElement('div')
 header.className = 'header'
@@ -35,15 +35,66 @@ input.setAttribute('placeholder', 'How are you?')
 header.appendChild(input)
 ```
 
-Into:
+Heavily based on Mithril, but also inspired by the hyperscript project, Preact
+and other React-like libraries, and Val.
+
+## Scope
+
+There's no virtual DOM, handling of state or updates, or mutating existing DOM
+nodes. It only simplifies DOM APIs for _creating_ elements and fragments. Allows
+for HTML components as functions. JSX compatible so drop it into any React-like
+projects.
+
+Runs server side via JSDOM to generate HTML for SSR.
+
+## SVGs/Namespaces
+
+There are many nuances to writing namespaced elements like SVGs and MathML. DOM
+APIs like `svgTextEl.x = 10` won't work as expected. They need methods which are
+namespaced like `setAttribute()`.
+
+`document.createElement()` won't work since it'll be namespaced to XHTML.
+
+Here's some standard JS for creating SVGs:
+
 ```js
-v('.header', { onClick: () => {} }, [
-  'Hello',
-  v('input[disabled][placeholder=How are you?]', { style: 'padding: 10px' })
-])
+document.createSVG = tag =>
+  document.createElementNS('http://www.w3.org/2000/svg', tag)
+
+const size = 30
+const svg = document.createSVG('svg')
+svg.setAttribute('viewBox', [0, 0, '100 100']);
+
+const box = document.createSVG('rect')
+box.setAttribute('width', size)
+box.setAttribute('height', size)
+box.setAttribute('fill', '#fff')
+box.addEventListener('mouseover', event => {
+  event.target.setAttribute('fill', '#ddd')
+})
+
+svg.appendChild(box)
 ```
 
-Example of its flexibility, supporting different styles:
+In voko, you'd write them as expected:
+
+```js
+const size = 30
+v('svg:svg[viewBox="0 0 100 100"]', [
+  v(`rect:svg[fill=#fff][width=${size}][height=${size}]#nice-icon`, {
+    onMouseOver: event => { event.target.setAttribute('fill', '#ddd') },
+  }),
+]),
+```
+
+Add arbitrary namespaces such as MathML by adding them to the `v.ns` object.
+Only SVG is included by default. You can rename namespaces to, if you're into
+that: `v.ns.s = v.ns.svg`
+
+## Examples
+
+Example of its flexibility, supporting different writing styles:
+
 ```js
 const header = v('header', { style: 'background:"#fff"' })
 const existingNode = document.createElement('p')
