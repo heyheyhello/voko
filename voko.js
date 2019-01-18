@@ -81,7 +81,7 @@ const withChildren = (parent, children) => {
 const v = (selector, ...attrChildren) => {
   const type = typeof selector
   if (type !== 'string' && type !== 'function')
-    throw new Error('Selector is not string or function (component)')
+    throw new Error('Selector isn\'t a string or function (component)')
 
   // attrChildren may start with attributes, or be entirely children
   const maybeAttr = attrChildren[0]
