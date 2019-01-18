@@ -3,6 +3,7 @@ import UglifyES from 'uglify-es'
 
 const reservedDOMProps = [
   'createElement',
+  'createElementNS',
   'createDocumentFragment',
   'createTextNode',
   'id',
@@ -34,6 +35,7 @@ if (error) throw error
 
 const reduced = code
   .replace(/ new Error\("(.+?)"\)/g, '"$1"')
+  .replace('isn\'t a', 'not')
   .replace('Unexpected object as child', 'Child is object')
   .replace(' (component)', '')
   .replace(/const/g, 'let')
