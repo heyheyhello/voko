@@ -76,7 +76,8 @@ box.addEventListener('mouseover', event => {
 svg.appendChild(box)
 ```
 
-In voko, you'd write them as expected:
+In voko, you'd write them as expected. Use `:` to denote the namespace. In this
+case, `:svg`. Replace the above code with:
 
 ```js
 const size = 30
@@ -88,12 +89,13 @@ v('svg:svg[viewBox="0 0 100 100"]', [
 ```
 
 Add arbitrary namespaces such as MathML by adding them to the `v.ns` object.
-Only SVG is included by default. You can rename namespaces to, if you're into
+Only SVG is included by default. You can rename namespaces too, if you're into
 that: `v.ns.s = v.ns.svg`
 
 ## Examples
 
-Example of its flexibility, supporting different writing styles:
+Example of its flexibility, supporting different writing styles for attributes,
+CSS-style syntax, and looping:
 
 ```js
 const header = v('header', { style: 'background:"#fff"' })
