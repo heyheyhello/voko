@@ -96,31 +96,14 @@ function createSVGBaseGrid({
   height = 10,
 } = {}) {
   const size = squareSize;
-  const pxWidth = width * size;
-  const pxHeight = height * size;
-  // can't [viewBox=] since the array will be coerced to a string
-  // can't [width=][height=]
-  const svg = v(`svg:svg#grid`, {
-    ref: e => {
-      e.setAttribute('width', pxWidth)
-      e.setAttribute('height', pxHeight)
-      e.setAttribute('viewBox', [0, 0, `${pxWidth} ${pxHeight}`])
-    },
-  })
+  const sW = width * size;
+  const sH = height * size;
+  const svg = v(`svg:svg[width=${sW}][height=${sH}][viewBox="0 0 ${sW} ${sH}"]`)
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      // can't [transform=] since the array will be coerced to a string
-      const group = v('g:svg', {
-        ref: e => {
-          e.setAttribute('transform', [`translate(${x * size},${y * size})`])
-        },
-      }, [
-        // can't [width=][height=]
-        v('rect:svg[fill=#fff][stroke-width=1][stroke=#ccc]', {
-          ref: e => {
-            e.setAttribute('width', size)
-            e.setAttribute('height', size)
-          },
+      const group = v(`g:svg[transform=translate(${x * size},${y * size})]`, [
+        // this looks expensive but will be cached! so the regex only runs once
+        v(`rect:svg[fill=#fff][stroke-width=1][stroke=#ccc][width=${size}][height=${size}]`, {
           onMouseOver: event => {
             event.target.setAttribute('fill', '#ddd')
           },
@@ -128,15 +111,13 @@ function createSVGBaseGrid({
             event.target.setAttribute('fill', '#fff')
           },
         }),
-        // can't [x=][y=]
-        v('text:svg', {
-          ref: e => {
-            e.setAttribute('x', 5)
-            e.setAttribute('y', 15)
-          },
-          // not really working either... it's in the {} but needs setAttribute
-          fontSize: 10,
-          fontFamily: 'monospace',
+        v('text:svg[x=5][y=15]', {
+          // NOTE: you can't do JS-notation for SVGs like you can with DOM nodes
+          // fontSize: 10,
+          // fontFamily: 'monospace',
+
+          'font-size': 10,
+          'font-family': 'monospace',
         }, `(${x},${y})`)
       ])
       svg.appendChild(group)
