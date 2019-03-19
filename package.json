@@ -1,6 +1,6 @@
 {
   "name": "voko",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Hyperscript reviver for the DOM using CSS selector syntax",
   "browser": "voko.js",
   "module": "voko.js",
