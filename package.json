@@ -2,7 +2,8 @@
   "name": "voko",
   "version": "3.0.0",
   "description": "Hyperscript reviver for the DOM using CSS selector syntax",
-  "main": "voko.js",
+  "browser": "voko.js",
+  "module": "voko.js",
   "scripts": {
     "minify": "node --experimental-modules minify.mjs",
     "size": "cat voko.min.js | gzip -9 | wc -c",
