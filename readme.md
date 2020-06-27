@@ -45,7 +45,9 @@ nodes. It only simplifies DOM APIs for _creating_ elements and fragments. Allows
 for HTML components as functions. JSX compatible so drop it into any React-like
 projects.
 
-Runs server side via JSDOM to generate HTML for SSR.
+I wrote this for my co-workers who were writing all DOM API calls by hand in a
+very messy and unmaintainable way (sorry but you know it's true). This is meant
+to be dropped into a `<script>` tag to be plug-and-play.
 
 ## SVGs/Namespaces
 
@@ -101,7 +103,6 @@ CSS-style syntax, and looping:
 const header = v('header', { style: 'background:"#fff"' })
 const existingNode = document.createElement('p')
 
-// ES7: https://github.com/tc39/proposal-object-rest-spread
 const ButtonComponent = ({ size, ...other }, children) =>
   v('a.btn', { style: { fontSize: size }, ...other }, children)
 
@@ -163,4 +164,5 @@ Read _docs/rationale.md_ on what makes a reviver (and components more generally)
 useful, and _docs/scope.md_ for the feature set and design decisions for voko.
 
 __Note__: This is a purely ESM script, so it won't support `require()`. Use the
-minified version to bind to `window` in the browser, and ESM for your bundler.
+minified version to bind to `window` in the browser, and ESM for your bundler or
+on Pika/Snowpack

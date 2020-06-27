@@ -19,7 +19,7 @@
   "engines": {
     "node": ">=8.5.0"
   },
-  "author": "Grant Hames-Morgan",
+  "author": "Gen Hames",
   "license": "MIT",
   "bugs": {
     "url": "https://gitlab.com/nthm/voko/issues"
